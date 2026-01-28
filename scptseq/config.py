@@ -48,19 +48,19 @@ class CommandLineArguments(object):
 
     @property
     def genome_file(self):
-        return _expanduser_or_none('<genome_file>')
+        return self._expanduser_or_none('<genome_file>')
 
     @property
     def control_bam_dir(self):
-        return _expanduser_or_none('<control_bam_dir>')
+        return self._expanduser_or_none('<control_bam_dir>')
 
     @property
     def perturbed_bam_dir(self):
-        return _expanduser_or_none('<perturbed_bam_dir>')
+        return self._expanduser_or_none('<perturbed_bam_dir>')
 
     @property
     def target_info_file(self):
-        return _expanduser_or_none('<target_info_file>')
+        return self._expanduser_or_none('<target_info_file>')
 
     @property
     def threads(self):
