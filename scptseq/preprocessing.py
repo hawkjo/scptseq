@@ -96,7 +96,7 @@ def haplotyped_mutation_preprocessing(arguments):
     log.info('Loading annotation...')
 
     target_info = yaml.load(open(arguments.target_info_file), Loader=yaml.FullLoader)
-    goi_target_info = target_info[goi]
+    goi_target_info = target_info[arguments.gene_name]
     gene_chrm, gene_start, gene_end = [goi_target_info[s] for s in ['chrm', 'start', 'end']]
     seg_bases = goi_target_info['seg_info']['seg_bases']
     seg_sites = goi_target_info['seg_info']['seg_sites']
