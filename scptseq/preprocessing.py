@@ -143,7 +143,7 @@ def haplotyped_mutation_preprocessing(arguments):
 
     log.info('Finding splice junctions in control sample...')
     log.info('Finding control bam files...')
-    ctrl_bam_files = glob.glob(f'{arguments.control_bam_dir}/*bam')
+    ctrl_bam_files = glob.glob(os.path.join(arguments.control_bam_dir, '*bam'))
     ctrl_bam_files.sort()
     log.info(f'Found {len(ctrl_bam_files)} files')
 
@@ -419,7 +419,7 @@ def haplotyped_mutation_preprocessing(arguments):
     ### Look in bam files
 
     log.info('Processing perturbed bam files')
-    bam_files = glob.glob(f'{arguments.perturbed_bam_dir}/*bam')
+    bam_files = glob.glob(os.path.join(arguments.perturbed_bam_dir, '*bam'))
     bam_files.sort()
     log.info(f'Found {len(bam_files)} files')
 
