@@ -8,7 +8,7 @@ import glob
 import os
 from collections import Counter, defaultdict
 from statsmodels.distributions.empirical_distribution import ECDF
-import .umi_tools
+from . import umi_tools
 from .constants import haplotypes
 from .misc import parse_mutation, bc_from_fpath
 
