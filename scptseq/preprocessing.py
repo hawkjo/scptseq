@@ -92,6 +92,9 @@ def load_all_muts_with_info(fpath):
 def haplotyped_mutation_preprocessing(arguments):
     """Haplotyped mutation statistics counting pipeline"""
 
+    if not os.path.exists(arguments.output_dir):
+        os.mkdir(arguments.output_dir)
+
     ### Load annotation and build annotation-based functions
     log.info('Loading annotation...')
 
