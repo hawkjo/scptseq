@@ -1,0 +1,7 @@
+*pyc
+*swp
+*pkl
+envscptseq
+build
+dist
+scptseq.egg-info
