@@ -13,6 +13,7 @@ from .constants import haplotypes
 from .misc import parse_mutation, bc_from_fpath
 
 log = logging.getLogger(__name__)
+plt.set_loglevel('critical')
 
 
 def get_clips(read):
@@ -319,10 +320,10 @@ def haplotyped_mutation_preprocessing(arguments):
         if overlap[best_overlap_junction] > 0:
             bss, bse = best_overlap_junction
             splicing_junction_str[junction] = f'J{bss}_{bse}>{start-bss:+d}_{end-bse:+d}'
-            log.debug(junction, splicing_junction_str[junction], overlap)
+            log.debug(f'{junction}, {splicing_junction_str[junction]}, {overlap}')
         else:
-            log.debug('None', junction, overlap)
-    log.debug(len(splicing_junction_str), len(splicing_junctions))
+            log.debug(f'None {junction}, {overlap}')
+    log.debug(f'{len(splicing_junction_str)}, {len(splicing_junctions)}')
 
     out_fpath = os.path.join(arguments.output_dir, f'{arguments.run_name}_splicing_junction_str.yml')
     with open(out_fpath, 'w') as out:
