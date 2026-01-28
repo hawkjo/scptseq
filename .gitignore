@@ -1,6 +1,7 @@
 *pyc
 *swp
 *pkl
+output_*
 envscptseq
 build
 dist
