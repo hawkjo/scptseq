@@ -468,7 +468,8 @@ def haplotyped_mutation_preprocessing(arguments):
     stat_cntrs_before_and_after = {}
     hap_reads_thresh = 1
     for i, bc in enumerate(all_bcs):
-        log.info(f'{i}/{len(all_bcs)}')
+        if i % 100 == 0:
+            log.info(f'{i}/{len(all_bcs)}')
         all_muts_with_info = all_muts_with_info_by_bc[bc]
         if not all_muts_with_info:
             continue
