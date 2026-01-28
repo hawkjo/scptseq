@@ -1,0 +1,87 @@
+LamC:
+  chrm: 2R
+  end: 14575771
+  primer:
+    end: 14572729
+    junction: null
+    seq: GAGGATCAGGCCAAGGAGCTCGC
+    start: 14572706
+    strand: '-'
+  seg_info:
+    seg_bases:
+    - - C
+      - A
+    seg_signatures:
+      maternal: C
+      paternal: A
+    seg_sites:
+    - 14572752
+    seg_sites_and_bases:
+    - !!python/tuple
+      - 14572752
+      - - C
+        - A
+    skip_sites: !!python/tuple
+    - - 14572824
+      - 14575733
+  start: 14570810
+  strand: '-'
+  targets:
+    t1:
+      cutsite: 14575540
+      end: 14575557
+      seq: GGCATCCACCTCGTCAAGGG
+      start: 14575537
+      strand: '-'
+    t2:
+      cutsite: 14572821
+      end: 14572838
+      seq: AAAGACGAAGGAGGCTACCG
+      start: 14572818
+      strand: '-'
+Prosalpha3:
+  chrm: 2R
+  end: 20996118
+  primer:
+    end: 20995615
+    junction: null
+    seq: CAGGCGTACACTCAGTACGGCGGAA
+    start: 20995590
+    strand: +
+  seg_info:
+    seg_bases:
+    - - G
+      - C
+    - - T
+      - G
+    seg_signatures:
+      maternal: GT
+      paternal: CG
+    seg_sites:
+    - 20994903
+    - 20995104
+    seg_sites_and_bases:
+    - !!python/tuple
+      - 20994903
+      - - G
+        - C
+    - !!python/tuple
+      - 20995104
+      - - T
+        - G
+    skip_sites: []
+  start: 20994900
+  strand: +
+  targets:
+    t1:
+      cutsite: 20995489
+      end: 20995506
+      seq: CAGTTCTGAGGTCAGCACAT
+      start: 20995486
+      strand: '-'
+    t2:
+      cutsite: 20994988
+      end: 20994991
+      seq: ATTGGTATATTCCTTAGCAA
+      start: 20994971
+      strand: +
