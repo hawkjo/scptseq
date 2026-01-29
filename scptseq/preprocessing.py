@@ -90,6 +90,70 @@ def load_all_muts_with_info(fpath):
     return dict(all_muts)
 
 
+def get_haplotyped_mutations(read, genome, splicing_junction_str, seg_sites=[], skip_sites=[]):
+    muts = []
+    seg_site_bases = {}
+
+    chrm = read.reference_name
+    query = read.query
+    start_clip, last_rr = get_start_clip_and_last_rr(read)
+    ins_seq = ''
+    ins_after = None
+    ins_active = False
+    del_start = None
+    del_active = False
+    prev_rr = None
+    for qq, rr in read.aligned_pairs:
+        # skip clips at beginning and cend
+        if rr is None and prev_rr is None and not ins_active:
+            continue
+        if rr is not None and rr >= last_rr:
+            break
+
+        # Process deletions and insertions after completed
+        if del_active and qq is not None:
+            if (del_start, prev_rr) not in splicing_junction_str:
+                muts.append(f'D{del_start}-{prev_rr}')
+            else:
+                muts.append(splicing_junction_str[(del_start, prev_rr)])
+            del_active = False
+            del_start = None
+        if ins_active and rr is not None:
+            muts.append(f'I{ins_after}{ins_seq}')
+            ins_seq = ''
+            ins_after = None
+            ins_active = False
+
+        # Start/continue indels and find mismatches and seg sites
+        if qq is None:
+            # deletion or splicing
+            if not del_active:
+                del_active = True
+                del_start = rr
+        elif rr is None:
+            # insertion
+            qbase = query[qq-start_clip].upper()
+            ins_seq += qbase
+            if not ins_active:
+                ins_active = True
+                ins_after = prev_rr
+        else:
+            # aligned bases
+            qbase = query[qq-start_clip].upper()
+            rbase = genome[chrm][rr].upper()
+
+            if rr in seg_sites:
+                seg_site_bases[rr] = qbase
+            elif rr in skip_sites:
+                pass
+            elif qbase != rbase:
+                muts.append(f'{rbase}{rr}{qbase}')
+
+        prev_rr = rr
+
+    return seg_site_bases, muts
+
+
 def haplotyped_mutation_preprocessing(arguments):
     """Haplotyped mutation statistics counting pipeline"""
 
@@ -338,69 +402,6 @@ def haplotyped_mutation_preprocessing(arguments):
 
     log.info('Loading genome')
     genome = SeqIO.to_dict(SeqIO.parse(open(arguments.genome_file), 'fasta'))
-    def get_haplotyped_mutations(read, splicing_junction_str, seg_sites=[], skip_sites=[]):
-        muts = []
-        seg_site_bases = {}
-
-        chrm = read.reference_name
-        query = read.query
-        start_clip, last_rr = get_start_clip_and_last_rr(read)
-        ins_seq = ''
-        ins_after = None
-        ins_active = False
-        del_start = None
-        del_active = False
-        prev_rr = None
-        for qq, rr in read.aligned_pairs:
-            # skip clips at beginning and cend
-            if rr is None and prev_rr is None and not ins_active:
-                continue
-            if rr is not None and rr >= last_rr:
-                break
-
-            # Process deletions and insertions after completed
-            if del_active and qq is not None:
-                if (del_start, prev_rr) not in splicing_junction_str:
-                    muts.append(f'D{del_start}-{prev_rr}')
-                else:
-                    muts.append(splicing_junction_str[(del_start, prev_rr)])
-                del_active = False
-                del_start = None
-            if ins_active and rr is not None:
-                muts.append(f'I{ins_after}{ins_seq}')
-                ins_seq = ''
-                ins_after = None
-                ins_active = False
-
-            # Start/continue indels and find mismatches and seg sites
-            if qq is None:
-                # deletion or splicing
-                if not del_active:
-                    del_active = True
-                    del_start = rr
-            elif rr is None:
-                # insertion
-                qbase = query[qq-start_clip].upper()
-                ins_seq += qbase
-                if not ins_active:
-                    ins_active = True
-                    ins_after = prev_rr
-            else:
-                # aligned bases
-                qbase = query[qq-start_clip].upper()
-                rbase = genome[chrm][rr].upper()
-
-                if rr in seg_sites:
-                    seg_site_bases[rr] = qbase
-                elif rr in skip_sites:
-                    pass
-                elif qbase != rbase:
-                    muts.append(f'{rbase}{rr}{qbase}')
-
-            prev_rr = rr
-
-        return seg_site_bases, muts
-
 
     def write_all_muts(bam_fpath, out_dir):
         bc = bc_from_fpath(bam_fpath)
@@ -409,7 +410,7 @@ def haplotyped_mutation_preprocessing(arguments):
         for read in pysam.AlignmentFile(bam_fpath).fetch(gene_chrm, gene_start, gene_end):
             if read.query is None:
                 continue
-            seg_site_bases, muts = get_haplotyped_mutations(read, splicing_junction_str, seg_sites, skip_sites)
+            seg_site_bases, muts = get_haplotyped_mutations(read, genome, splicing_junction_str, seg_sites, skip_sites)
             haplotype = maternal_or_paternal(seg_site_bases)
             output.append([read.qname, (read.pos, read.aend), haplotype, seg_site_bases, muts])
         with open(out_fpath, 'w') as out:
