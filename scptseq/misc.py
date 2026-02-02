@@ -1,5 +1,6 @@
 import os
 import re
+import gzip
 
 
 ins_re = re.compile('^I(\d+)([ACGT]+)$')
@@ -41,4 +42,9 @@ def bc_from_fpath(fpath):
     bname = os.path.basename(fpath)
     return bname[:bname.index('.')]
 
+
+def gzip_friendly_open(fpath, mode='rt'):
+    if fpath.endswith('.gz'):
+        return gzip.open(fpath, mode)
+    return open(fpath, mode)
 
