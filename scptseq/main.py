@@ -7,8 +7,6 @@ Usage:
   scptseq refsplice
   scptseq call
   scptseq combined
-  scptseq lencov
-  scptseq segsites
 
 Options:
   -h --help     Show this screen.
@@ -16,6 +14,7 @@ Options:
 
 Commands:
   count         Count the haplotyped mutation information per cell 
+  splitfastqs   Split fastq files by barcode
 """
 import logging
 import os
