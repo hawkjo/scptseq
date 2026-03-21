@@ -159,6 +159,9 @@ def haplotyped_mutation_preprocessing(arguments):
 
     if not os.path.exists(arguments.output_dir):
         os.mkdir(arguments.output_dir)
+    fig_dir = os.path.join(arguments.output_dir, 'figures')
+    if not os.path.exists(fig_dir):
+        os.mkdir(fig_dir)
 
     ### Load annotation and build annotation-based functions
     log.info('Loading annotation...')
@@ -177,6 +180,9 @@ def haplotyped_mutation_preprocessing(arguments):
     cutsites = [goi_target_info['targets'][tname]['cutsite'] for tname in ['t1', 't2']]
     def mut_min_dist_to_cutsite(mut):
         mut_type, start, end, bases = parse_mutation(mut)
+        if mut_type == 'splice' and isinstance(bases, (int, int)):
+            start += bases[0]
+            end += bases[1]
         return min([abs(pos - cutsite) for pos in range(start, end+1) for cutsite in cutsites])
 
     def maternal_or_paternal(seg_site_bases):
@@ -284,7 +290,7 @@ def haplotyped_mutation_preprocessing(arguments):
     fig, ax = plt.subplots()
     ax.hist(n_umis_given_bc_fpath.values(), 50)
     ax.set_xlabel('UMIs per cell in control')
-    out_fpath = os.path.join(arguments.output_dir, f'{arguments.run_name}_umis_per_control_cell.pdf')
+    out_fpath = os.path.join(fig_dir, f'{arguments.run_name}_umis_per_control_cell.pdf')
     fig.savefig(out_fpath)
     log.info(f'UMIs per control cell saved to {out_fpath}')
 
@@ -322,7 +328,7 @@ def haplotyped_mutation_preprocessing(arguments):
     ax.legend()
     ax.set_xlabel('Fraction of UMIs with junction')
     ax.set_ylabel('CDF')
-    out_fpath = os.path.join(arguments.output_dir, f'{arguments.run_name}_fraction_umis_cdf.pdf')
+    out_fpath = os.path.join(fig_dir, f'{arguments.run_name}_fraction_umis_cdf.pdf')
     fig.savefig(out_fpath)
     log.info(f'Fraction UMIs CDF saved to {out_fpath}')
 
