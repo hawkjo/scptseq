@@ -44,11 +44,10 @@ def call_mutations(arguments):
     with open(fpath) as f:
         stat_cntrs_before_and_after = yaml.load(f, Loader=yaml.Loader)
 
-    # Onward
-
     all_bcs = set([bc for bc in stat_cntrs_before_and_after.keys()])
 
-    ### Read count per cell figures
+    # Read count per cell figs
+    log.info('Read count and thresholding')
 
     xy = {boa: [[], []] for boa in before_after}
     stat_type = 'total_reads'
@@ -130,6 +129,8 @@ def call_mutations(arguments):
 
     # Find and label splicing changes
 
+    log.info('Finding and labeling splicing changes')
+
     standard_splicing_junction_strs = [splicing_junction_str[junction] for junction in standard_splicing_junctions]
     standard_splicing_junction_strs
 
@@ -204,6 +205,8 @@ def call_mutations(arguments):
 
     # Call mut vs wt
 
+    log.info('Thresholding for mutation calls')
+
     def get_mut_sig(bc, hap, max_dist=10):
         try:
             def_mut = stat_cntrs_before_and_after[bc][hap]['defining mutation']['mut']
@@ -256,6 +259,8 @@ def call_mutations(arguments):
 
     # Most common mutations fig
 
+    log.info('Most common mutations')
+
     mut_cntr = mut_cntr_given_status['mut']
     total_cells = sum(mut_cntr.values())
 
@@ -281,6 +286,8 @@ def call_mutations(arguments):
 
     # Call mutations and write to file
 
+    log.info('Calling mutations and writing to file')
+
     uncalled_set = set(['n/a', 'low_cov_uncalled', 'high_cov_uncalled'])
 
     fpath = os.path.join(arguments.output_dir, f'{arguments.run_name}_mutation_statuses.txt')
@@ -302,6 +309,8 @@ def call_mutations(arguments):
 
 
     # Cell zygosity breakdown pie chart
+
+    log.info('Zygosity breakdown')
 
     het_hom_status_given_bc = {}
     for bc in all_bcs:
@@ -350,6 +359,8 @@ def call_mutations(arguments):
 
 
     # Mutated targets pie chart
+
+    log.info('Mutations by target')
 
     tnames = ['t1', 't2']
 
@@ -404,6 +415,8 @@ def call_mutations(arguments):
 
 
     # Build mutation statistics by type and location
+
+    log.info('Collating mutation statistics')
 
     def split_muts_by_target_site(mut_str, thresh=10):
         muts = mut_str.split(',')
@@ -468,6 +481,8 @@ def call_mutations(arguments):
 
     # Mutations by type by target fig
 
+    log.info('Mutations by type and target')
+
     possible_mut_types = ['sub', 'del', 'ins', 'splice']
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     for ax, tname in zip(axes, tnames):
@@ -482,6 +497,8 @@ def call_mutations(arguments):
 
 
     # Deletion lens fig
+
+    log.info('Deletion lens')
 
     breakpoints = [20, 30, 100]
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -504,6 +521,8 @@ def call_mutations(arguments):
 
     # Insertion lens fig
 
+    log.info('Insertion lens')
+
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     for ax, tname in zip(axes, tnames):
         data = [el for hap in haplotypes for el in ins_lens_given_hap_target[hap][tname]]
@@ -523,6 +542,8 @@ def call_mutations(arguments):
 
 
     # Combined indel lens fig
+
+    log.info('Indel lens')
 
     fig, ax = plt.subplots(figsize=(9, 4))
     data = [el for hap in haplotypes for el in combined_indel_lens_given_hap[hap]]
