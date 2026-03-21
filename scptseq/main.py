@@ -6,7 +6,6 @@ Usage:
   scptseq splitfastqs  <fastq_files> --output-dir=<output_dir> [-v | -vv | -vvv]
   scptseq refsplice
   scptseq call
-  scptseq combined
 
 Options:
   -h --help     Show this screen.
@@ -14,7 +13,7 @@ Options:
 
 Commands:
   count         Count the haplotyped mutation information per cell 
-  splitfastqs   Split fastq files by barcode
+  splitfastqs   Split fastq files by barcode, one file per barcode
 """
 import logging
 import os
