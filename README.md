@@ -1,5 +1,7 @@
 # scPT-seq: Single-Cell Perturbation and Transcriptome Sequencing
 
+A suite of tools for processing scPT-seq data.
+
 ### Installation
 
 For easiest installation, use pip:
