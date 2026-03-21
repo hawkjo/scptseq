@@ -10,7 +10,7 @@ from collections import Counter, defaultdict
 from statsmodels.distributions.empirical_distribution import ECDF
 from . import umi_tools
 from .constants import haplotypes
-from .misc import parse_mutation, bc_from_fpath
+from .misc import parse_mutation, bc_from_fpath, TargetInfo
 
 log = logging.getLogger(__name__)
 plt.set_loglevel('critical')
@@ -165,42 +165,13 @@ def haplotyped_mutation_preprocessing(arguments):
 
     ### Load annotation and build annotation-based functions
     log.info('Loading annotation...')
+    target_info = TargetInfo(arguments.target_info_file, arguments.gene_name)
 
-    target_info = yaml.load(open(arguments.target_info_file), Loader=yaml.FullLoader)
-    goi_target_info = target_info[arguments.gene_name]
-    gene_chrm, gene_start, gene_end = [goi_target_info[s] for s in ['chrm', 'start', 'end']]
-    seg_bases = goi_target_info['seg_info']['seg_bases']
-    seg_sites = goi_target_info['seg_info']['seg_sites']
-    skip_sites = goi_target_info['seg_info']['skip_sites']
-    t1_cutsite = goi_target_info['targets']['t1']['cutsite']
-    t2_cutsite = goi_target_info['targets']['t2']['cutsite']
-    sorted_seg_sites = sorted(seg_sites, key=lambda pos: abs(pos - t1_cutsite))
-    seg_bases_given_site = {seg_site: site_seg_bases for seg_site, site_seg_bases in zip(seg_sites, seg_bases)}
-
-    cutsites = [goi_target_info['targets'][tname]['cutsite'] for tname in ['t1', 't2']]
-    def mut_min_dist_to_cutsite(mut):
-        mut_type, start, end, bases = parse_mutation(mut)
-        if mut_type == 'splice' and isinstance(bases, (int, int)):
-            start += bases[0]
-            end += bases[1]
-        return min([abs(pos - cutsite) for pos in range(start, end+1) for cutsite in cutsites])
-
-    def maternal_or_paternal(seg_site_bases):
-        for seg_site in sorted_seg_sites:
-            if seg_site not in seg_site_bases:
-                continue
-            obs_base = seg_site_bases[seg_site]
-            site_bases = seg_bases_given_site[seg_site]
-            if obs_base == site_bases[0]:
-                return 'maternal'
-            if obs_base == site_bases[1]:
-                return 'paternal'
-        return None
 
     def get_target_adj_mut_max_frac_and_cov(frac_cntr, cov_cntr, total_reads, max_dist=10):
         if cov_cntr:
             for mut, max_frac in frac_cntr.most_common():
-                if not mut.startswith('J') and mut_min_dist_to_cutsite(mut) <= max_dist:
+                if not mut.startswith('J') and target_info.mut_min_dist_to_cutsite(mut) <= max_dist:
                     cov = cov_cntr[mut]
                     return mut, max_frac, cov
         # Reach here either because no cov_cntr (no reads have mutations) or because the loop
@@ -225,9 +196,9 @@ def haplotyped_mutation_preprocessing(arguments):
     ctrl_bam_umi_map_given_bc = {ctrl_bam_fpath:
             umi_tools.get_umi_maps_from_fastq_or_bam_file(
                 bam_fpath=ctrl_bam_fpath,
-                chrm=gene_chrm,
-                start=gene_start,
-                end=gene_end)
+                chrm=target_info.gene_chrm,
+                start=target_info.gene_start,
+                end=target_info.gene_end)
             for ctrl_bam_fpath in ctrl_bam_files}
 
     log.info('Counting splice junction UMIs per cell...')
@@ -241,7 +212,10 @@ def haplotyped_mutation_preprocessing(arguments):
             log.info(f'  {i}/{len(ctrl_bam_files)}')
         umi_map_given_bc = ctrl_bam_umi_map_given_bc[bam_fpath]
         cell_junctions_given_umi = defaultdict(set)
-        for read in pysam.AlignmentFile(bam_fpath).fetch(gene_chrm, gene_start, gene_end):
+        for read in pysam.AlignmentFile(bam_fpath).fetch(
+                target_info.gene_chrm,
+                target_info.gene_start,
+                target_info.gene_end):
             if not read.query:
                 continue
             bc, umi = umi_tools.bc_and_umi_given_read_name(read.qname)
@@ -413,11 +387,20 @@ def haplotyped_mutation_preprocessing(arguments):
         bc = bc_from_fpath(bam_fpath)
         out_fpath = os.path.join(out_dir, f'{bc}.mutations.yml')
         output = []
-        for read in pysam.AlignmentFile(bam_fpath).fetch(gene_chrm, gene_start, gene_end):
+        for read in pysam.AlignmentFile(bam_fpath).fetch(
+                target_info.gene_chrm,
+                target_info.gene_start,
+                target_info.gene_end):
             if read.query is None:
                 continue
-            seg_site_bases, muts = get_haplotyped_mutations(read, genome, splicing_junction_str, seg_sites, skip_sites)
-            haplotype = maternal_or_paternal(seg_site_bases)
+            seg_site_bases, muts = get_haplotyped_mutations(
+                    read,
+                    genome,
+                    splicing_junction_str,
+                    target_info.seg_sites,
+                    target_info.skip_sites
+                    )
+            haplotype = target_info.maternal_or_paternal(seg_site_bases)
             output.append([read.qname, (read.pos, read.aend), haplotype, seg_site_bases, muts])
         with open(out_fpath, 'w') as out:
             yaml.dump(output, out)

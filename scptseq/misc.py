@@ -1,6 +1,7 @@
 import os
 import re
 import gzip
+import yaml
 
 
 ins_re = re.compile('^I(\d+)([ACGT]+)$')
@@ -48,3 +49,36 @@ def gzip_friendly_open(fpath, mode='rt'):
         return gzip.open(fpath, mode)
     return open(fpath, mode)
 
+
+class TargetInfo():
+    def __init__(self, target_info_file, gene_name):
+        target_info = yaml.load(open(target_info_file), Loader=yaml.FullLoader)
+        self.goi_target_info = target_info[gene_name]
+        self.gene_chrm, self.gene_start, self.gene_end = [goi_target_info[s] for s in ['chrm', 'start', 'end']]
+        self.seg_bases = goi_target_info['seg_info']['seg_bases']
+        self.seg_sites = goi_target_info['seg_info']['seg_sites']
+        self.skip_sites = goi_target_info['seg_info']['skip_sites']
+        self.t1_cutsite = goi_target_info['targets']['t1']['cutsite']
+        self.t2_cutsite = goi_target_info['targets']['t2']['cutsite']
+        self.cutsites = [goi_target_info['targets'][tname]['cutsite'] for tname in ['t1', 't2']]
+        self.sorted_seg_sites = sorted(seg_sites, key=lambda pos: abs(pos - t1_cutsite))
+        self.seg_bases_given_site = {seg_site: site_seg_bases for seg_site, site_seg_bases in zip(seg_sites, seg_bases)}
+
+    def mut_min_dist_to_cutsite(self, mut):
+        mut_type, start, end, bases = parse_mutation(mut)
+        if mut_type == 'splice' and isinstance(bases, (int, int)):
+            start += bases[0]
+            end += bases[1]
+        return min([abs(pos - cutsite) for pos in range(start, end+1) for cutsite in self.cutsites])
+
+    def maternal_or_paternal(self, seg_site_bases):
+        for seg_site in self.sorted_seg_sites:
+            if seg_site not in seg_site_bases:
+                continue
+            obs_base = seg_site_bases[seg_site]
+            site_bases = self.seg_bases_given_site[seg_site]
+            if obs_base == site_bases[0]:
+                return 'maternal'
+            if obs_base == site_bases[1]:
+                return 'paternal'
+        return None
