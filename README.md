@@ -14,7 +14,7 @@ A suite of tools for processing scPT-seq data, as described in
 For easiest installation, use pip:
 
 ```
-pip install scptseq
+python -m pip install git+https://github.com/hawkjo/scptseq
 ```
 
 The following instructions should also work for manual installation across platforms, except that installing virtualenv with apt-get is Ubuntu specific. For other platforms, install virtualenv appropriately if desired.
