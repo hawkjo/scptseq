@@ -154,7 +154,7 @@ def get_haplotyped_mutations(read, genome, splicing_junction_str, seg_sites=[], 
     return seg_site_bases, muts
 
 
-def haplotyped_mutation_preprocessing(arguments):
+def find_all_ref_splice_junctions(arguments):
     """Haplotyped mutation statistics counting pipeline"""
 
     if not os.path.exists(arguments.results_dir):
@@ -163,23 +163,9 @@ def haplotyped_mutation_preprocessing(arguments):
     if not os.path.exists(fig_dir):
         os.mkdir(fig_dir)
 
-    ### Load annotation and build annotation-based functions
+    ### Load annotation 
     log.info('Loading annotation...')
     target_info = TargetInfo(arguments.target_info_file, arguments.gene_name)
-
-
-    def get_target_adj_mut_max_frac_and_cov(frac_cntr, cov_cntr, total_reads, max_dist=10):
-        if cov_cntr:
-            for mut, max_frac in frac_cntr.most_common():
-                if not mut.startswith('J') and target_info.mut_min_dist_to_cutsite(mut) <= max_dist:
-                    cov = cov_cntr[mut]
-                    return mut, max_frac, cov
-        # Reach here either because no cov_cntr (no reads have mutations) or because the loop
-        # finished without finding a mutation near the cutsite
-        max_frac = 0
-        cov = total_reads
-        return None, max_frac, cov
-
 
     ### umi aware splice-junction determination from control sample
     # 
@@ -375,13 +361,41 @@ def haplotyped_mutation_preprocessing(arguments):
     log.info(f'Splice junction representations saved to {out_fpath}')
 
 
+def haplotyped_mutation_preprocessing(arguments):
     #### Haplotyped mutation statistics counting 
     # 
     # We haplotype each read according to the segregating site present in the read that is closest
     # to the target t1 cutsite.
 
+    log.info('Loading splicing info')
+    fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_splicing_junction_str.yml')
+    if not os.path.exists(fpath):
+        raise ValueError(f'{fpath} does not exist. results_dir must match refsplice')
+    with open(fpath) as f:
+        splicing_junction_str = yaml.load(f, Loader=yaml.FullLoader)
+
+
+    # Load genome
     log.info('Loading genome')
     genome = SeqIO.to_dict(SeqIO.parse(open(arguments.genome_file), 'fasta'))
+
+
+    # Load annotation and build annotation-based functions
+    log.info('Loading annotation...')
+    target_info = TargetInfo(arguments.target_info_file, arguments.gene_name)
+
+
+    def get_target_adj_mut_max_frac_and_cov(frac_cntr, cov_cntr, total_reads, max_dist=10):
+        if cov_cntr:
+            for mut, max_frac in frac_cntr.most_common():
+                if not mut.startswith('J') and target_info.mut_min_dist_to_cutsite(mut) <= max_dist:
+                    cov = cov_cntr[mut]
+                    return mut, max_frac, cov
+        # Reach here either because no cov_cntr (no reads have mutations) or because the loop
+        # finished without finding a mutation near the cutsite
+        max_frac = 0
+        cov = total_reads
+        return None, max_frac, cov
 
     def write_all_muts(bam_fpath, out_dir):
         bc = bc_from_fpath(bam_fpath)

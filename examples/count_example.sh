@@ -5,7 +5,6 @@ scptseq count \
     Prosalpha3 \
     example_data/targets.yml \
     example_data/Drosophila_melanogaster.BDGP6.28.dna.toplevel.chrm_2R.fa \
-    example_data/TX46_Prosalpha3_ctrl_bams \
     example_data/TX46_Prosalpha3_bams \
     --results-dir=results \
     -vvv
