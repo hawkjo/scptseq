@@ -129,7 +129,7 @@ def call_mutations(arguments):
 
     # Find and label splicing changes
 
-    log.info('Finding and labeling splicing changes')
+    log.info('Labelling splicing changes')
 
     standard_splicing_junction_strs = [splicing_junction_str[junction] for junction in standard_splicing_junctions]
     standard_splicing_junction_strs
@@ -157,7 +157,6 @@ def call_mutations(arguments):
     best_standard_end = {end: parse_mutation(junc_str)[2] for (start, end), junc_str in splicing_junction_str.items()}
     matching_standard_part = {start: end for start, end in standard_splicing_junctions} | {end: start for start, end in standard_splicing_junctions}
     while len(splicing_junction_str_given_del) > prev_len:
-        print(prev_len)
         prev_len = len(splicing_junction_str_given_del)
         for mut in all_valid_muts:
             mut_type, start, end, bases = parse_mutation(mut)
@@ -185,8 +184,6 @@ def call_mutations(arguments):
                         best_standard_start[start] = bss
                         best_standard_end[end] = bse
                         splicing_junction_str_given_del[mut] = f'J{bss}_{bse}>{start-bss:+d}_{end-bse:+d}'
-    print(len(splicing_junction_str_given_del))
-    splicing_junction_str_given_del
 
     for bc in all_bcs:
         for hap in haplotypes:
@@ -505,7 +502,7 @@ def call_mutations(arguments):
     for ax, tname in zip(axes, tnames):
         data = [el  for hap in haplotypes for el in del_lens_given_hap_target[hap][tname]]
         bins = list(np.arange(1, breakpoints[0]+2) - 0.5)
-        bins += [bins[-1]+0.1, breakpoints[1], breakpoints[2], max(data) + 1]
+        bins += [bins[-1]+0.1, breakpoints[1], breakpoints[2], max(data + breakpoints) + 1]
         idx = list(range(1, breakpoints[0]+2+len(breakpoints)))
         x = list(range(1, breakpoints[0]+2))+list(np.arange(breakpoints[0]+2, breakpoints[0]+2+len(breakpoints)) + 0.5)
         idx_labels = list(range(1, breakpoints[0]+1)) + [''] + breakpoints
@@ -527,7 +524,7 @@ def call_mutations(arguments):
     for ax, tname in zip(axes, tnames):
         data = [el for hap in haplotypes for el in ins_lens_given_hap_target[hap][tname]]
         bins = list(np.arange(1, breakpoints[0]+2) - 0.5)
-        bins += [bins[-1]+0.1, breakpoints[1], breakpoints[2], max(max(data + [1])+1, breakpoints[2])]
+        bins += [bins[-1]+0.1, breakpoints[1], breakpoints[2], max(data + breakpoints) + 1]
         idx = list(range(1, breakpoints[0]+2+len(breakpoints)))
         x = list(range(1, breakpoints[0]+2))+list(np.arange(breakpoints[0]+2, breakpoints[0]+2+len(breakpoints)) + 0.5)
         idx_labels = list(range(1, breakpoints[0]+1)) + [''] + breakpoints
@@ -548,7 +545,7 @@ def call_mutations(arguments):
     fig, ax = plt.subplots(figsize=(9, 4))
     data = [el for hap in haplotypes for el in combined_indel_lens_given_hap[hap]]
     bins = list(np.arange(1, breakpoints[0]+2) - 0.5)
-    bins += [bins[-1]+0.1, breakpoints[1], breakpoints[2], max(max(data + [1])+1, breakpoints[2])]
+    bins += [bins[-1]+0.1, breakpoints[1], breakpoints[2], max(data + breakpoints) + 1]
     bins = [-bb for bb in bins][::-1] + bins
     idx = list(range(1, breakpoints[0]+2+len(breakpoints)))
     idx = [-i for i in idx][::-1] + [0] + idx
