@@ -290,7 +290,7 @@ def call_mutations(arguments):
     fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_mutation_statuses.txt')
     with open(fpath, 'w') as out:
         out.write('\t'.join(['barcode'] + haplotypes) + '\n')
-        for bc in all_bcs:
+        for bc in sorted(all_bcs):
             if bc in status_given_bc_hap:
                 mut_sigs = []
                 for hap in haplotypes:
