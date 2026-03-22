@@ -3,8 +3,8 @@ scptseq: Computational suite for scPT-seq data
 
 Usage:
   scptseq splitfastqs  <fastq_files> --output-dir=<output_dir> [-v | -vv | -vvv]
-  scptseq count        <run_name> <gene_name> <target_info_file> <genome_file> <control_bam_dir> <perturbed_bam_dir> [--output-dir=<output_dir>] [-v | -vv | -vvv]
-  scptseq call         <run_name> <gene_name> <target_info_file> [--output-dir=<output_dir>] [-v | -vv | -vvv]
+  scptseq count        <run_name> <gene_name> <target_info_file> <genome_file> <control_bam_dir> <perturbed_bam_dir> [--results-dir=<results_dir>] [-v | -vv | -vvv]
+  scptseq call         <run_name> <gene_name> <target_info_file> [--results-dir=<results_dir>] [-v | -vv | -vvv]
   scptseq refsplice
 
 Options:

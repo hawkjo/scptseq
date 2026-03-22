@@ -69,3 +69,7 @@ class CommandLineArguments(object):
     @property
     def output_dir(self):
         return self._arguments['--output-dir'] or '.'
+
+    @property
+    def results_dir(self):
+        return self._arguments['--results-dir'] or '.'

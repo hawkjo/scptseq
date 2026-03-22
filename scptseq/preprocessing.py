@@ -157,9 +157,9 @@ def get_haplotyped_mutations(read, genome, splicing_junction_str, seg_sites=[], 
 def haplotyped_mutation_preprocessing(arguments):
     """Haplotyped mutation statistics counting pipeline"""
 
-    if not os.path.exists(arguments.output_dir):
-        os.mkdir(arguments.output_dir)
-    fig_dir = os.path.join(arguments.output_dir, 'figures')
+    if not os.path.exists(arguments.results_dir):
+        os.mkdir(arguments.results_dir)
+    fig_dir = os.path.join(arguments.results_dir, 'figures')
     if not os.path.exists(fig_dir):
         os.mkdir(fig_dir)
 
@@ -255,7 +255,7 @@ def haplotyped_mutation_preprocessing(arguments):
 
 
     splicing_junctions = set(junction_cell_counts.keys())
-    out_fpath = os.path.join(arguments.output_dir, f'{arguments.run_name}_splicing_junctions.yml')
+    out_fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_splicing_junctions.yml')
     with open(out_fpath, 'w') as out:
         yaml.dump(splicing_junctions, out)
     log.info(f'Splice junctions saved to {out_fpath}')
@@ -306,12 +306,12 @@ def haplotyped_mutation_preprocessing(arguments):
     fig.savefig(out_fpath)
     log.info(f'Fraction umis CDF saved to {out_fpath}')
 
-    out_fpath = os.path.join(arguments.output_dir, f'{arguments.run_name}_standard_splicing_junctions.yml')
+    out_fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_standard_splicing_junctions.yml')
     with open(out_fpath, 'w') as out:
         yaml.dump(standard_splicing_junctions, out)
     log.info(f'Standard splice junctions saved to {out_fpath}')
 
-    out_fpath = os.path.join(arguments.output_dir, f'{arguments.run_name}_splicing_junction_frac_umis_per_cell.yml')
+    out_fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_splicing_junction_frac_umis_per_cell.yml')
     with open(out_fpath, 'w') as out:
         yaml.dump(junction_fracs_per_cell, out)
     log.info(f'Junction fractions per cell saved to {out_fpath}')
@@ -369,7 +369,7 @@ def haplotyped_mutation_preprocessing(arguments):
             log.debug(f'None {junction}, {overlap}')
     log.debug(f'{len(splicing_junction_str)}, {len(splicing_junctions)}')
 
-    out_fpath = os.path.join(arguments.output_dir, f'{arguments.run_name}_splicing_junction_str.yml')
+    out_fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_splicing_junction_str.yml')
     with open(out_fpath, 'w') as out:
         yaml.dump(splicing_junction_str, out)
     log.info(f'Splice junction representations saved to {out_fpath}')
@@ -563,7 +563,7 @@ def haplotyped_mutation_preprocessing(arguments):
             }
 
 
-    out_fpath = os.path.join(arguments.output_dir, f'{arguments.run_name}_stat_cntrs_before_and_after.yml')
+    out_fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_stat_cntrs_before_and_after.yml')
     with open(out_fpath, 'w') as out:
         yaml.dump(stat_cntrs_before_and_after, out)
     log.info(f'Stat counter struct written to {out_fpath}')

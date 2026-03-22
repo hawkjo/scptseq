@@ -17,9 +17,9 @@ plt.set_loglevel('critical')
 def call_mutations(arguments):
     """Mutation calling with QC figure genetation"""
 
-    if not os.path.exists(arguments.output_dir):
-        os.mkdir(arguments.output_dir)
-    fig_dir = os.path.join(arguments.output_dir, 'figures')
+    if not os.path.exists(arguments.results_dir):
+        os.mkdir(arguments.results_dir)
+    fig_dir = os.path.join(arguments.results_dir, 'figures')
     if not os.path.exists(fig_dir):
         os.mkdir(fig_dir)
 
@@ -30,17 +30,17 @@ def call_mutations(arguments):
 
     before_after = ['before', 'after']
 
-    fpath = os.path.join(arguments.output_dir, f'{arguments.run_name}_standard_splicing_junctions.yml')
+    fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_standard_splicing_junctions.yml')
     with open(fpath) as f:
         standard_splicing_junctions = yaml.load(f, Loader=yaml.FullLoader)
-    fpath = os.path.join(arguments.output_dir, f'{arguments.run_name}_splicing_junction_str.yml')
+    fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_splicing_junction_str.yml')
     with open(fpath) as f:
         splicing_junction_str = yaml.load(f, Loader=yaml.FullLoader)
 
     # Load data
 
     log.info('Loading data...')
-    fpath = os.path.join(arguments.output_dir, f'{arguments.run_name}_stat_cntrs_before_and_after.yml')
+    fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_stat_cntrs_before_and_after.yml')
     with open(fpath) as f:
         stat_cntrs_before_and_after = yaml.load(f, Loader=yaml.Loader)
 
@@ -290,7 +290,7 @@ def call_mutations(arguments):
 
     uncalled_set = set(['n/a', 'low_cov_uncalled', 'high_cov_uncalled'])
 
-    fpath = os.path.join(arguments.output_dir, f'{arguments.run_name}_mutation_statuses.txt')
+    fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_mutation_statuses.txt')
     with open(fpath, 'w') as out:
         out.write('\t'.join(['barcode'] + haplotypes) + '\n')
         for bc in all_bcs:
