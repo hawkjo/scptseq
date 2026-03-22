@@ -7,5 +7,5 @@ scptseq count \
     example_data/Drosophila_melanogaster.BDGP6.28.dna.toplevel.chrm_2R.fa \
     example_data/TX46_Prosalpha3_ctrl_bams \
     example_data/TX46_Prosalpha3_bams \
-    --output-dir=output_count \
+    --results-dir=results \
     -vvv
