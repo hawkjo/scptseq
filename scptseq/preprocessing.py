@@ -181,10 +181,10 @@ def haplotyped_mutation_preprocessing(arguments):
         return None, max_frac, cov
 
 
-    ### UMI aware splice-junction determination from control sample
+    ### umi aware splice-junction determination from control sample
     # 
     # We find splicing junctions by finding all observed splice junctions in control cells that have at
-    # least 2 UMIs in the same cell
+    # least 2 umis in the same cell
 
     log.info('Finding splice junctions in control sample...')
     log.info('Finding control bam files...')
@@ -192,7 +192,7 @@ def haplotyped_mutation_preprocessing(arguments):
     ctrl_bam_files.sort()
     log.info(f'Found {len(ctrl_bam_files)} files')
 
-    log.info('Building UMI maps...')
+    log.info('Building umi maps...')
     ctrl_bam_umi_map_given_bc = {ctrl_bam_fpath:
             umi_tools.get_umi_maps_from_fastq_or_bam_file(
                 bam_fpath=ctrl_bam_fpath,
@@ -201,9 +201,9 @@ def haplotyped_mutation_preprocessing(arguments):
                 end=target_info.gene_end)
             for ctrl_bam_fpath in ctrl_bam_files}
 
-    log.info('Counting splice junction UMIs per cell...')
+    log.info('Counting splice junction umis per cell...')
     # splicing_junctions_list_of_cntrs contains a list of one counter for each cell, where the counter
-    # indicates for each splicing junction how many UMIs support that splicing junction
+    # indicates for each splicing junction how many umis support that splicing junction
     splicing_junctions_list_of_cntrs = []
     splicing_junctions_cntr_given_bc_fpath = {}
     n_umis_given_bc_fpath = {}
@@ -235,20 +235,20 @@ def haplotyped_mutation_preprocessing(arguments):
     for cntr in splicing_junctions_list_of_cntrs:
         all_possible_splicing_junctions.update(cntr.keys())
 
-    #### Accept splicing junction if it exists with at least 2 UMIs in one cell
+    #### Accept splicing junction if it exists with at least 2 umis in one cell
 
     junction_cell_counts = Counter()
     junction_total_counts = Counter()
     for junction in all_possible_splicing_junctions:
         for cntr in splicing_junctions_list_of_cntrs:
             if junction in cntr:
-                if cntr[junction] >= 2:  # at least 2 UMIs in one cell
+                if cntr[junction] >= 2:  # at least 2 umis in one cell
                     junction_cell_counts[junction] += 1
                     junction_total_counts[junction] += cntr[junction]
 
 
     log.info('Top 50 of {len(junction_cell_counts)} observed splicing junctions:')
-    log.info('Splicing junction\tIntron length\tCell count\tUMI count')
+    log.info('Splicing junction\tIntron length\tCell count\tumi count')
     for tup, cell_count in junction_cell_counts.most_common()[:50]:
         intron_len = tup[1] - tup[0]
         log.info(f'{tup}\t{intron_len:,d}\t\t{cell_count:,d}\t\t{junction_total_counts[tup]:,d}')
@@ -263,17 +263,17 @@ def haplotyped_mutation_preprocessing(arguments):
 
     fig, ax = plt.subplots()
     ax.hist(n_umis_given_bc_fpath.values(), 50)
-    ax.set_xlabel('UMIs per cell in control')
+    ax.set_xlabel('umis per cell in control')
     out_fpath = os.path.join(fig_dir, f'{arguments.run_name}_umis_per_control_cell.pdf')
     fig.savefig(out_fpath)
-    log.info(f'UMIs per control cell saved to {out_fpath}')
+    log.info(f'umis per control cell saved to {out_fpath}')
 
 
     #### Definition
-    # We are here defining the `standard_splicing_junctions` as those which are present in >5% of UMIs
+    # We are here defining the `standard_splicing_junctions` as those which are present in >5% of umis
     # in at least 50% of cells.
 
-    log.info('Finding standard splicing junctions (>5% UMIs in >50% cells)')
+    log.info('Finding standard splicing junctions (>5% umis in >50% cells)')
     junction_fracs_per_cell = defaultdict(list)
     for junction in splicing_junctions:
         for bam_fpath in ctrl_bam_files:
@@ -284,7 +284,7 @@ def haplotyped_mutation_preprocessing(arguments):
             else:
                 junction_fracs_per_cell[junction].append(float(n_junction_umis)/n_umis)
 
-    log.info('Splicing junctions 99% confidence intervals of Fraction UMIs per cell:')
+    log.info('Splicing junctions 99% confidence intervals of Fraction umis per cell:')
     standard_splicing_junctions = set()
     conf_intvl_99 = {}
     fig, ax = plt.subplots()
@@ -295,16 +295,16 @@ def haplotyped_mutation_preprocessing(arguments):
             standard_splicing_junctions.add(junction)
         else:
             ax.plot(ecdf.x, ecdf.y)
-        ci_lb = ecdf.x[int(len(ecdf.x)*0.5/100)]
-        ci_ub = ecdf.x[int(len(ecdf.x)*99.5/100)]
+        ci_lb = max(0.0, ecdf.x[int(len(ecdf.x)*0.5/100)])
+        ci_ub = min(1.0, ecdf.x[int(len(ecdf.x)*99.5/100)])
         conf_intvl_99[junction] = (ci_lb, ci_ub)
         log.info(f'{junction}: {ci_lb:.2f}-{ci_ub:.2f}')
     ax.legend()
-    ax.set_xlabel('Fraction of UMIs with junction')
+    ax.set_xlabel('Fraction of umis with junction')
     ax.set_ylabel('CDF')
     out_fpath = os.path.join(fig_dir, f'{arguments.run_name}_fraction_umis_cdf.pdf')
     fig.savefig(out_fpath)
-    log.info(f'Fraction UMIs CDF saved to {out_fpath}')
+    log.info(f'Fraction umis CDF saved to {out_fpath}')
 
     out_fpath = os.path.join(arguments.output_dir, f'{arguments.run_name}_standard_splicing_junctions.yml')
     with open(out_fpath, 'w') as out:
@@ -446,10 +446,10 @@ def haplotyped_mutation_preprocessing(arguments):
     #             * with coverage and frac
     #         * Before and after:
     #             * Total reads
-    #             * Total UMIs
+    #             * Total umis
     #             * For each mutation
     #                 * Mutation identity
-    #                 * For reads and UMI:
+    #                 * For reads and umi:
     #                     * coverage
     #                     * count with mutation
     #                     * fraction with mutation
@@ -478,7 +478,7 @@ def haplotyped_mutation_preprocessing(arguments):
                     if mut not in all_possible_muts:
                         all_possible_muts[mut] = parse_mutation(mut)
 
-            # Count UMIs and build correction map and cntr
+            # Count umis and build correction map and cntr
             umi_cntr = Counter(umi_tools.umi_given_read_name(read_name) for read_name, _, _ in all_muts_with_info[haplotype])
             corrected_umi_map = umi_tools.get_umi_map_from_cntr(umi_cntr)
             corrected_umi_cntr = Counter()
