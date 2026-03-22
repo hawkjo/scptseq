@@ -369,7 +369,7 @@ def haplotyped_mutation_preprocessing(arguments):
     log.info('Loading splicing info')
     fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_splicing_junction_str.yml')
     if not os.path.exists(fpath):
-        raise ValueError(f'{fpath} does not exist. results_dir must match refsplice')
+        raise ValueError(f'{fpath} does not exist. results-dir must match refsplice')
     with open(fpath) as f:
         splicing_junction_str = yaml.load(f, Loader=yaml.FullLoader)
 
