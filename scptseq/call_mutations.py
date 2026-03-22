@@ -13,12 +13,11 @@ log = logging.getLogger(__name__)
 plt.set_loglevel('critical')
 
 
-
 def call_mutations(arguments):
     """Mutation calling with QC figure genetation"""
 
     if not os.path.exists(arguments.results_dir):
-        os.mkdir(arguments.results_dir)
+        raise ValueError(f'{arguments.results_dir} does not exist. results-dir must match count')
     fig_dir = os.path.join(arguments.results_dir, 'figures')
     if not os.path.exists(fig_dir):
         os.mkdir(fig_dir)
@@ -31,9 +30,13 @@ def call_mutations(arguments):
     before_after = ['before', 'after']
 
     fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_standard_splicing_junctions.yml')
+    if not os.path.exists(fpath):
+        raise ValueError(f'{fpath} does not exist. results-dir must match refsplice')
     with open(fpath) as f:
         standard_splicing_junctions = yaml.load(f, Loader=yaml.FullLoader)
     fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_splicing_junction_str.yml')
+    if not os.path.exists(fpath):
+        raise ValueError(f'{fpath} does not exist. results-dir must match refsplice')
     with open(fpath) as f:
         splicing_junction_str = yaml.load(f, Loader=yaml.FullLoader)
 
