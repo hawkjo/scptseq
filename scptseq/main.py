@@ -13,6 +13,7 @@ Options:
 
 Commands:
   splitfastqs   Split fastq files by barcode, one file per barcode
+  refsplice     Find all splice junctions in control data, including non-canonical
   count         Count the haplotyped mutation information per cell 
   call          Call mutations per cell 
 """

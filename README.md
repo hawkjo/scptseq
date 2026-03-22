@@ -43,6 +43,18 @@ python -m pip install .
 
 ```
 Usage:
+  scptseq splitfastqs  <fastq_files> --output-dir=<output_dir> [-v | -vv | -vvv]
+  scptseq refsplice    <run_name> <gene_name> <target_info_file> <control_bam_dir> [--results-dir=<results_dir>] [-v | -vv | -vvv]
+  scptseq count        <run_name> <gene_name> <target_info_file> <genome_file> <perturbed_bam_dir> [--results-dir=<results_dir>] [-v | -vv | -vvv]
+  scptseq call         <run_name> <gene_name> <target_info_file> [--results-dir=<results_dir>] [-v | -vv | -vvv]
+
+Options:
+  -h --help     Show this screen.
+  --version     Show version.
+
+Commands:
+  splitfastqs   Split fastq files by barcode, one file per barcode
+  refsplice     Find all splice junctions in control data, including non-canonical
+  count         Count the haplotyped mutation information per cell 
+  call          Call mutations per cell 
 ```
-
-
