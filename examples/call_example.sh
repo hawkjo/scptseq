@@ -1,8 +1,9 @@
 #!/bin/bash
 
 scptseq call \
-    TX46_Prosalpha3 \
-    Prosalpha3 \
-    example_data/targets.yml \
-    --results-dir=results \
     -vvv
+    TX46_Prosalpha3 \           # <run_name>: user-selected name for the experiment  
+    Prosalpha3 \                # <gene_name>: gene name, matching <target_info_file> entry  
+    example_data/targets.yml \  # <target_info_file>: target info, see file for format  
+    --results-dir=results \     # <results_dir>: results directory for mutation calling pipeline  
+    -vvv                        # [-v | -vv | -vvv]:  verbosity  

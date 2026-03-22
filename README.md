@@ -71,23 +71,14 @@ Used for identifying all splice junctions in a control sample, both canonical an
 to distinguish perturbation-caused splice junction changes from low-frequency non-canonical
 junctions.
 
-### count
+#### count
 Preprocesses the aligned perturbation reads to collate key statistics per mutation per cell per
 haplotype.
 
-### call
+#### call
 Perform the mutation calling, outputing mutation status per chromosome per cell, as well as initial
 overview statistics and figures.
 
-### Parameters
-
-`<fastq_files>`: comma separated list of fastq files
-`<output_dir>`: output directory for split fastq files
-`<run_name>`: user-selected name for the experiment
-`<gene_name>`: gene name, matching `<target_info_file>` entry
-`<target_info_file>`: target info, see `examples/example_data/targets.yml` for format
-`<control_bam_dir>`: directory with aligned control files named by barcode
-`<perturbed_bam_dir>`: directory with aligned perturbed files named by barcode
-`<genome_file>`: path to reference genome
-`<results_dir>`: directory for results from mutation calling pipeline
-`[-v | -vv | -vvv]`:  verbosity
+### Examples
+Examples demonstrating use of each of the top level functions with further descriptions are given
+in the `examples` folder. 
