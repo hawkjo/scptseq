@@ -362,8 +362,7 @@ def find_all_ref_splice_junctions(arguments):
 
 
 def haplotyped_mutation_preprocessing(arguments):
-    #### Haplotyped mutation statistics counting 
-    # 
+    """Haplotyped mutation statistics counting"""
     # We haplotype each read according to the segregating site present in the read that is closest
     # to the target t1 cutsite.
 
