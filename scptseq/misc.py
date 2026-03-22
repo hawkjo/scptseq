@@ -54,15 +54,17 @@ class TargetInfo():
     def __init__(self, target_info_file, gene_name):
         target_info = yaml.load(open(target_info_file), Loader=yaml.FullLoader)
         self.goi_target_info = target_info[gene_name]
-        self.gene_chrm, self.gene_start, self.gene_end = [goi_target_info[s] for s in ['chrm', 'start', 'end']]
-        self.seg_bases = goi_target_info['seg_info']['seg_bases']
-        self.seg_sites = goi_target_info['seg_info']['seg_sites']
-        self.skip_sites = goi_target_info['seg_info']['skip_sites']
-        self.t1_cutsite = goi_target_info['targets']['t1']['cutsite']
-        self.t2_cutsite = goi_target_info['targets']['t2']['cutsite']
-        self.cutsites = [goi_target_info['targets'][tname]['cutsite'] for tname in ['t1', 't2']]
-        self.sorted_seg_sites = sorted(seg_sites, key=lambda pos: abs(pos - t1_cutsite))
-        self.seg_bases_given_site = {seg_site: site_seg_bases for seg_site, site_seg_bases in zip(seg_sites, seg_bases)}
+        self.gene_chrm, self.gene_start, self.gene_end = [self.goi_target_info[s] for s in ['chrm', 'start', 'end']]
+        self.seg_bases = self.goi_target_info['seg_info']['seg_bases']
+        self.seg_sites = self.goi_target_info['seg_info']['seg_sites']
+        self.skip_sites = self.goi_target_info['seg_info']['skip_sites']
+        self.t1_cutsite = self.goi_target_info['targets']['t1']['cutsite']
+        self.t2_cutsite = self.goi_target_info['targets']['t2']['cutsite']
+        self.cutsites = [self.goi_target_info['targets'][tname]['cutsite'] for tname in ['t1', 't2']]
+        self.sorted_seg_sites = sorted(self.seg_sites, key=lambda pos: abs(pos - self.t1_cutsite))
+        self.seg_bases_given_site = {
+                seg_site: site_seg_bases for seg_site, site_seg_bases in zip(self.seg_sites, self.seg_bases)
+                }
 
     def mut_min_dist_to_cutsite(self, mut):
         mut_type, start, end, bases = parse_mutation(mut)
