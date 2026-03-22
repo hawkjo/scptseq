@@ -63,8 +63,7 @@ Commands:
 #### splitfastqs
 A helper function for separating the output of
 [freediv10xbarcodes](https://github.com/hawkjo/freediv10Xcellbcs) into separate files, one per
-barcode. Done for both control and perturbed files, which are then aligned using mapping software
-of choice.
+barcode. Done for both control and perturbed files, to be aligned using mapping software of choice.
 
 #### refsplice
 Used for identifying all splice junctions in a control sample, both canonical and non-canonical, 
