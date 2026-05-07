@@ -6,8 +6,6 @@ A suite of tools for processing scPT-seq data, as described in
 
 **John A. Hawkins, Siamak Redhai, Svenja Leible, Mireia Osuna Lopez, Hilal Ozgur, Tianyu Wang, Michaela Holzem, Michael Boutros, Oliver Stegle**
 
-*bioRxiv*. Dec 24, 2025. https://doi.org/10.64898/2025.12.23.696319
-
 
 ### Installation
 
