@@ -4,7 +4,7 @@ A suite of tools for processing scPT-seq data, as described in
 
 ### Direct detection of CRISPR mutations and transcriptional responses at single cell resolution in vivo
 
-**John A. Hawkins, Siamak Redhai, Svenja Leible, Mireia Osuna Lopez, Hilal Ozgur, Tianyu Wang, Michaela Holzem, Michael Boutros, Oliver Stegle**
+**John A. Hawkins, Siamak Redhai, Svenja Leible, Mireia Osuna Lopez, Hilal Ozgur, Tianyu Wang, Michaela Holzem, Lars M. Steinmetz, Michael Boutros, Oliver Stegle**
 
 
 ### Installation
@@ -36,6 +36,8 @@ Now install required packages listed in `setup.py` and install scptseq with `set
 ```
 python -m pip install .
 ```
+
+Dependencies and requirements listed in setup.py and pyproject.toml. Tested on Linux el8. Install time ~1.5 minutes.
 
 ### Usage
 
@@ -78,4 +80,4 @@ overview statistics and figures.
 
 ### Examples
 Examples demonstrating use of each of the top level functions with further descriptions are given
-in the `examples` folder. 
+in the `examples` folder. Runtime ~2 minutes.
