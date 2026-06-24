@@ -1,3 +1,15 @@
 [build-system]
+requires-python = ">=3.10"
 requires = ["setuptools>=49.2.0", "wheel>=0.36.2", "numpy>=1.20.0"]
 build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.15.18",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: end-to-end tests that run the full pipeline (deselect with '-m \"not slow\"')",
+]
