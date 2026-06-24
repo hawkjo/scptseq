@@ -31,13 +31,13 @@ python -m venv envscptseq
 . envscptseq/bin/activate
 ```
 
-Now install required packages listed in `setup.py` and install scptseq with `setup.py`:
+Now install scptseq and its dependencies:
 
 ```
 python -m pip install .
 ```
 
-Dependencies and requirements listed in setup.py and pyproject.toml. Tested on Linux el8. Install time ~1.5 minutes.
+Dependencies and requirements are listed in pyproject.toml. Tested on Linux el8. Install time ~1.5 minutes.
 
 ### Usage
 
