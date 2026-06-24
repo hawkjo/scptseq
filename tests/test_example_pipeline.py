@@ -5,10 +5,7 @@ data in ``examples/example_data`` exactly as the ``examples/*.sh`` scripts do,
 and asserts that the produced per-cell mutation calls match the checked-in,
 author-validated reference file ``ref_TX46_Prosalpha3_mutation_statuses.txt``.
 
-This is a slow integration test (~2 min): it reads the 25 MB genome and 60 BAM
-files. It is the highest-value first test because the reference output was
-human-validated, so matching it tests what the pipeline *should* produce rather
-than merely freezing current behaviour.
+This is a slow integration test (~2 min). 
 """
 
 import shutil
