@@ -7,7 +7,7 @@ requires-python = ">=3.10"
 authors = [{name = "John Hawkins", email = "hawkjo@gmail.com"}]
 keywords = ["DNA", "RNA", "CRISPR", "NGS", "bioinformatics"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Natural Language :: English",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
