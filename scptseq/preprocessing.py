@@ -477,7 +477,7 @@ def haplotyped_mutation_preprocessing(arguments):
     log.info('Mutation files written')
 
 
-    mut_fpaths = glob.glob(f'{mutations_dir}/*')
+    mut_fpaths = glob.glob(os.path.join(mutations_dir, '*.mutations.yml'))
 
     log.info('Loading all mutation information')
     all_muts_with_info_by_bc = {}
