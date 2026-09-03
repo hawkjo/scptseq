@@ -15,6 +15,14 @@ produce something wrong.
 | `ValueError: too many values to unpack` while reading control BAMs                        | A read name does not match `{barcode}_{umi}#{...}`                                                                      | See [read names](inputs.md#read-names)                                         |
 | `ValueError: max() arg is an empty sequence` during `call`                                | No cell reached the calling stage                                                                                       | Check `count`'s `-vvv` output for how many reads were haplotyped               |
 | `OSError: [Errno 24] Too many open files` during `splitfastqs`                            | One file handle is held open per barcode for the whole run, which exceeds the default limit at roughly a thousand cells | Raise the limit for the shell that runs it, e.g. `ulimit -n 4096`              |
+| `<file> has no record named <chrm>` during `count`                                        | The genome FASTA has no record matching the target file's `chrm`                                                        | Check `chrm` against the FASTA record ids and the BAM header                   |
+| `BrokenProcessPool` during `refsplice` or `count`                                         | A `--threads` worker died, most often killed for memory                                                                 | Lower `--threads`, or re-run with `--threads=1` to get the underlying error    |
+
+**A note on `--threads` and error messages.** A worker process inherits none of the
+parent's logging configuration, so a warning raised inside one prints without the
+timestamp prefix that every other line carries. Re-running with `--threads=1` runs the
+same code in the parent process, which gives both the normal formatting and an ordinary
+traceback instead of a `BrokenProcessPool`.
 
 **A note on the three "results-dir must match" messages.** The filenames they look for
 embed `<run_name>`, so all three also fire when `--results-dir` is correct but

@@ -6,4 +6,5 @@ scptseq refsplice \
     Prosalpha3                  `# <gene_name>: gene name, matching <target_info_file> entry` \
     example_data/targets.yml    `# <target_info_file>: target info, see file for format` \
     --results-dir=results       `# <results_dir>: results directory for mutation calling pipeline` \
-    -vvv                        `# [-v | -vv | -vvv]:  verbosity`
+    -vvv                        `# [-v | -vv | -vvv]:  verbosity` \
+    "$@"                        `# any extra options, e.g. --threads=8`

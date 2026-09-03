@@ -79,6 +79,13 @@ properties (e.g. `arguments.run_name`), never the dict directly.
 - In `call_mutations.py`, `yy_thresh` is assigned inside the
   `max_frac_v_cov` figure block and consumed by `get_cell_haplotype_status`
   further down. The calling logic depends on that figure code having run.
+- `refsplice` and `count` distribute their per-cell work with
+  `misc.map_over_cells`, which returns results in input order rather than
+  completion order. The reductions that consume them depend on that order, so a
+  worker must never return a `set`, or anything containing one: pickling a set
+  rebuilds it in its own iteration order, which is not the order the serial code
+  produces, and the transitive junction matching is sensitive to it. Workers also
+  cannot log — the root logger is configured in the parent only.
 - **Output behavior is frozen while the paper is under revision.** Verify any
   change by diffing a fresh example run against
   `examples/example_data/ref_TX46_Prosalpha3_mutation_statuses.txt` (the

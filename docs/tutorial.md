@@ -43,6 +43,22 @@ To check the run, look at the final file: `results/TX46_Prosalpha3_mutation_stat
 
 `count` writes a `mutations/` directory inside the perturbed BAM directory, so delete it after a test run.
 
+### Running the per-cell stages in parallel
+
+`refsplice` and `count` do one independent unit of work per cell, so both take a
+`--threads` option that spreads that work over worker processes:
+
+```
+./refsplice_example.sh --threads=8
+```
+
+Output does not depend on the value: the per-cell results are reduced in file order, not
+completion order, so every file is byte-identical at any thread count. The bundled example
+is too small to gain from it — thirty cells is less work than starting the workers — but on
+a real run of thousands of cells this is most of the wall-clock time. `count` benefits more
+than `refsplice`. Each worker holds its own copy of the target contig, so memory grows with
+the thread count.
+
 ## Part 2 — what just happened
 
 | Stage | Read | Wrote | The number to look at |
