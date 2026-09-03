@@ -14,13 +14,12 @@ plt.set_loglevel('critical')
 
 
 def call_mutations(arguments):
-    """Mutation calling with QC figure genetation"""
+    """Mutation calling with QC figure generation"""
 
     if not os.path.exists(arguments.results_dir):
         raise ValueError(f'{arguments.results_dir} does not exist. results-dir must match count')
     fig_dir = os.path.join(arguments.results_dir, 'figures')
-    if not os.path.exists(fig_dir):
-        os.mkdir(fig_dir)
+    os.makedirs(fig_dir, exist_ok=True)
 
     # Load annotation
     log.info('Loading annotation...')
@@ -44,6 +43,8 @@ def call_mutations(arguments):
 
     log.info('Loading data...')
     fpath = os.path.join(arguments.results_dir, f'{arguments.run_name}_stat_cntrs_before_and_after.yml')
+    if not os.path.exists(fpath):
+        raise ValueError(f'{fpath} does not exist. results-dir and run-name must match count')
     with open(fpath) as f:
         stat_cntrs_before_and_after = yaml.load(f, Loader=yaml.Loader)
 
@@ -89,8 +90,8 @@ def call_mutations(arguments):
     # max_frac vs cov threshold fig
 
     def get_threshes(hap):
-        xx_lower_thresh = 0.3 if hap == 'maternal' else 0.3
-        xx_upper_thresh = 0.3 if hap == 'maternal' else 0.3
+        xx_lower_thresh = 0.3
+        xx_upper_thresh = 0.3
         min_evidence_reads=3
         return min_evidence_reads, xx_lower_thresh, xx_upper_thresh
 
