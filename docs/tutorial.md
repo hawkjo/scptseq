@@ -105,7 +105,7 @@ target file, the BAM header, and the record ID in your genome FASTA. The BAM and
 > run to completion, write every figure, and produce a mutation-statuses file containing
 > nothing but its header line.
 
-A minimal entry needs eight values. Everything else in the bundled
+A minimal entry needs the values below. Everything else in the bundled
 `example_data/targets.yml` is provenance that the code never reads.
 
 ```yaml
@@ -113,7 +113,7 @@ MyGene:
   chrm: 2R                  # must match the BAM header and the FASTA record ID
   start: 20994900           # region to analyse, half-open [start, end)
   end: 20996118
-  targets:
+  targets:                  # any number of targets: t1, t2, ... tN. t1 is required
     t1:
       cutsite: 20995489     
     t2:

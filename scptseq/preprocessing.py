@@ -414,7 +414,7 @@ def haplotyped_mutation_preprocessing(arguments):
         """Find the haplotype-defining mutation and report its fraction and coverage.
 
         The defining mutation is the highest-fraction non-splice mutation lying within
-        `max_dist` of either cut site.
+        `max_dist` of any cut site.
 
         Args:
             frac_cntr: Maps mutation to the fraction of its covering reads that carry it.

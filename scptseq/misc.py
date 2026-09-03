@@ -77,13 +77,17 @@ def gzip_friendly_open(fpath, mode='rt'):
     return open(fpath, mode)
 
 
+target_name_re = re.compile(r'^t[1-9]\d*$')
 class TargetInfo():
     """One gene's entry from a target-info YAML file.
 
-    Eight values are read from the file: `chrm`, `start`, `end`, `seg_info.seg_sites`,
+    These values are read from the file: `chrm`, `start`, `end`, `seg_info.seg_sites`,
     `seg_info.seg_bases`, `seg_info.skip_sites`, and the `cutsite` of each of the targets. Any
     other field present in the file is ignored. All coordinates are 0-based; `start` and `end`
     describe a half-open interval. See `docs/inputs.md` for the full format.
+
+    A gene may define any number of targets, which must be named `t1`, `t2`, ... `tN`. `t1`
+    is always required as it is the reference point for ordering the segregating sites.
 
     Attributes:
         gene_chrm: Contig name, which must match both the BAM header and the genome
@@ -95,10 +99,16 @@ class TargetInfo():
             paired with `seg_sites` by list position, in matching order.
         skip_sites: Individual reference positions to ignore when collecting
             mutations.
-        cutsites: Both cut sites, `[t1, t2]`.
+        target_names: Target names ordered by their numeric suffix, `['t1', 't2', ...]`
+        cutsites: The cut site of each target, in `target_names` order. 
+        t1_cutsite: Cut site of `t1`, the reference target.
         sorted_seg_sites: Segregating sites ordered by distance from the `t1` cut
             site, which is the order `maternal_or_paternal` consults them in.
         seg_bases_given_site: Maps each segregating site to its base pair.
+
+    Raises:
+        ValueError: If the gene's targets are not named `t1`, `t2`, ... `tN`, or if `t1`
+            is absent.
     """
     def __init__(self, target_info_file, gene_name):
         target_info = yaml.safe_load(open(target_info_file))
@@ -107,9 +117,16 @@ class TargetInfo():
         self.seg_bases = self.goi_target_info['seg_info']['seg_bases']
         self.seg_sites = self.goi_target_info['seg_info']['seg_sites']
         self.skip_sites = self.goi_target_info['seg_info']['skip_sites']
-        self.t1_cutsite = self.goi_target_info['targets']['t1']['cutsite']
-        self.t2_cutsite = self.goi_target_info['targets']['t2']['cutsite']
-        self.cutsites = [self.goi_target_info['targets'][tname]['cutsite'] for tname in ['t1', 't2']]
+        targets = self.goi_target_info['targets']
+        if 't1' not in targets or not all(target_name_re.match(str(tname)) for tname in targets):
+            raise ValueError(
+                    f'{gene_name}: targets must be named t1, t2, ... with t1 present. '
+                    f'Got: {sorted(map(str, targets))}'
+                    )
+        # Ordered by target number rather than lexicographic or by order in the file
+        self.target_names = sorted(targets, key=lambda tname: int(tname[1:]))
+        self.cutsites = [targets[tname]['cutsite'] for tname in self.target_names]
+        self.t1_cutsite = targets['t1']['cutsite']
         self.sorted_seg_sites = sorted(self.seg_sites, key=lambda pos: abs(pos - self.t1_cutsite))
         self.seg_bases_given_site = {
                 seg_site: site_seg_bases for seg_site, site_seg_bases in zip(self.seg_sites, self.seg_bases)
@@ -135,7 +152,7 @@ class TargetInfo():
 
         Segregating sites are consulted in order of distance from the `t1` cut site. The first site
         the read covers whose base matches one of the two known alleles gives the haplotype. A site
-        covered but matching neither allele falls through to the next site. 
+        covered but matching neither allele falls through to the next site.
 
         Args:
             seg_site_bases: Maps segregating-site position to the base observed at

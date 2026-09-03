@@ -86,7 +86,8 @@ Notes on reading this table:
 ## Figures
 
 Written to `<results_dir>/figures/`. Two come from `refsplice`, ten from `call`. The
-per-target figures have one panel per CRISPR target.
+per-target figures have one panel per CRISPR target, wrapped at two panels per row and
+ordered `t1`, `t2`, ... `tN`.
 
 | File | Plot | Axes |
 |---|---|---|

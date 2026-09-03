@@ -13,6 +13,24 @@ log = logging.getLogger(__name__)
 plt.set_loglevel('critical')
 
 
+def target_panel_axes(n_targets: int):
+    """Create a figure with one panel per CRISPR target, at most two per row.
+
+    Args:
+        n_targets: Number of targets for the gene.
+
+    Returns:
+        `(fig, axes)` where `axes` is a flat list of exactly `n_targets` axes in target
+        order. Any leftover panel in the grid is hidden.
+    """
+    ncols = min(n_targets, 2)
+    nrows = -(-n_targets // ncols)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(6 * ncols, 4 * nrows), squeeze=False)
+    for ax in axes.flat[n_targets:]:
+        ax.set_axis_off()
+    return fig, list(axes.flat[:n_targets])
+
+
 def call_mutations(arguments):
     """Mutation calling with QC figure generation"""
 
@@ -363,7 +381,7 @@ def call_mutations(arguments):
 
     log.info('Mutations by target')
 
-    tnames = ['t1', 't2']
+    tnames = target_info.target_names
 
     def target_sites_given_mut_str(mut_str, thresh=10):
         muts = mut_str.split(',')
@@ -378,7 +396,7 @@ def call_mutations(arguments):
 
     def target_sites_str_given_mut_str(mut_str):
         targets = target_sites_given_mut_str(mut_str)
-        return ','.join(sorted(targets))
+        return ','.join(sorted(targets, key=tnames.index))
 
     target_specific_statuses = []
     for bc in all_bcs:
@@ -403,11 +421,13 @@ def call_mutations(arguments):
         cntr[i] = Counter()
         for s in target_specific_statuses:
             mut_str = s.split(' / ')[i]
+            # Target names are t1, t2, ... so this keeps target fields and drops the
+            # status words, none of which starts with 't'.
             if mut_str.startswith('t'):
                 cntr[i][mut_str] += 1
 
     fig, ax = plt.subplots()
-    labels = sorted(cntr[0].keys())
+    labels = sorted(set(cntr[0]) | set(cntr[1]))
     vals = [cntr[0][label]+cntr[1][label] for label in labels]
     labels = [f'{label} ({val})' for label, val in zip(labels, vals)]
     ax.pie(vals, labels=labels, autopct='%1.1f%%')
@@ -421,7 +441,7 @@ def call_mutations(arguments):
 
     def split_muts_by_target_site(mut_str, thresh=10):
         muts = mut_str.split(',')
-        muts_by_target = [[], []]
+        muts_by_target = [[] for _ in tnames]
         for mut in muts:
             mut_type, start, end, bases = parse_mutation(mut)
             for i, cutsite in enumerate(target_info.cutsites):
@@ -485,7 +505,7 @@ def call_mutations(arguments):
     log.info('Mutations by type and target')
 
     possible_mut_types = ['sub', 'del', 'ins', 'splice']
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    fig, axes = target_panel_axes(len(tnames))
     for ax, tname in zip(axes, tnames):
         vals = [sum(mut_types_given_hap_target[hap][tname][mut_type] for hap in haplotypes) for mut_type in possible_mut_types]
         ax.bar(range(4), vals)
@@ -502,7 +522,7 @@ def call_mutations(arguments):
     log.info('Deletion lens')
 
     breakpoints = [20, 30, 100]
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    fig, axes = target_panel_axes(len(tnames))
     for ax, tname in zip(axes, tnames):
         data = [el  for hap in haplotypes for el in del_lens_given_hap_target[hap][tname]]
         bins = list(np.arange(1, breakpoints[0]+2) - 0.5)
@@ -524,7 +544,7 @@ def call_mutations(arguments):
 
     log.info('Insertion lens')
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    fig, axes = target_panel_axes(len(tnames))
     for ax, tname in zip(axes, tnames):
         data = [el for hap in haplotypes for el in ins_lens_given_hap_target[hap][tname]]
         bins = list(np.arange(1, breakpoints[0]+2) - 0.5)

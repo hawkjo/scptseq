@@ -15,19 +15,19 @@ genome FASTA.
 ## Coordinates are 0-based
 
 > **Every coordinate in the target file is 0-based**, matching the BAM internals that pysam
-> exposes. `start` and `end` describe a half-open interval `[start, end)`; `cutsite`,
-> `seg_sites` and `skip_sites` are single positions compared directly against pysam
-> reference positions.
+> exposes. `start` and `end` describe a half-open interval `[start, end)`; `cutsite`, `seg_sites`
+> and `skip_sites` are single positions compared directly against pysam reference positions.
 >
 > Coordinates taken from IGV, Ensembl, or a VCF are 1-based and must be converted.
 >
-> **The failure is silent.** With coordinates off by one, the segregating-site bases match
-> neither the maternal nor the paternal allele, so no read can be haplotyped. Every stage
-> exits successfully, every figure is written, and `*_mutation_statuses.txt` contains its header line and nothing else. If you see that, check this first.
+> **The failure is silent.** With coordinates off by one, the segregating-site bases match neither
+> the maternal nor the paternal allele, so no read can be haplotyped. Every stage exits
+> successfully, every figure is written, and `*_mutation_statuses.txt` contains its header line and
+> nothing else. If you see that, check this first.
 
 ## The target file
 
-A YAML mapping keyed by gene name. The key is what you pass as `<gene_name>`. Eight values
+A YAML mapping keyed by gene name. The key is what you pass as `<gene_name>`. These values
 per gene are read by the code:
 
 ```yaml
@@ -54,16 +54,19 @@ MyGene:
 | ----------------------------------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------- |
 | `chrm`                                                                                                            | yes              | Contig name. Must match the BAM header and the FASTA record ID                        |
 | `start`, `end`                                                                                                    | yes              | Region analysed, half-open. Reads are fetched for this interval only                  |
-| `targets.t1.cutsite`                                                                                              | yes              | Cut site of the first target. Also the reference point for ordering segregating sites |
-| `targets.t2.cutsite`                                                                                              | yes              | Cut site of the second target                                                         |
+| `targets.t<n>.cutsite`                                                                                            | yes              | Cut site of each target. `t1` is required, and is also the reference point for ordering segregating sites |
 | `seg_info.seg_sites`                                                                                              | yes              | Positions that distinguish the haplotypes                                             |
 | `seg_info.seg_bases`                                                                                              | yes              | `[maternal, paternal]` base at each site, paired with `seg_sites` by list position    |
 | `seg_info.skip_sites`                                                                                             | yes              | Individual reference positions to ignore when collecting mutations                    |
-| `primer`, `strand`, `targets.t*.start` / `end` / `seq`, `seg_info.seg_signatures`, `seg_info.seg_sites_and_bases` | **no**           | Present in the bundled example as provenance. Never consulted; omit them freely       |
+| `primer`, `strand`, `targets.t*.start` / `end` / `seq`, `seg_info.seg_signatures`, `seg_info.seg_sites_and_bases` | **no**           | Present in the bundled example as provenance. Never consulted, omit them freely       |
 
-Two notes on writing your own:
+Three notes on writing your own:
 
 - **Plain YAML only.** The file is read with `yaml.safe_load`. `examples/example_data/targets.yml` is a working example.
+- **Targets must be named `t1`, `t2`, ... `tN`, and `t1` must be present.** A gene may
+  define any number of them. Unlike the rest of the file, `targets` accepts no other keys.
+  Anything else under it is an error, not an ignored field. Keep cut sites more than 20 bp apart,
+  and inside `[start, end)`. 
 - **`skip_sites` is a flat list of individual positions**, tested by membership against one
   reference position at a time. An interval will not work — a two-element list is read as
   two positions, not as a range. Use `[]` for none.

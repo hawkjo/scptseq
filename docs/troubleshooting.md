@@ -15,6 +15,7 @@ produce something wrong.
 | `ValueError: too many values to unpack` while reading control BAMs                        | A read name does not match `{barcode}_{umi}#{...}`                                                                      | See [read names](inputs.md#read-names)                                         |
 | `ValueError: max() arg is an empty sequence` during `call`                                | No cell reached the calling stage                                                                                       | Check `count`'s `-vvv` output for how many reads were haplotyped               |
 | `OSError: [Errno 24] Too many open files` during `splitfastqs`                            | One file handle is held open per barcode for the whole run, which exceeds the default limit at roughly a thousand cells | Raise the limit for the shell that runs it, e.g. `ulimit -n 4096`              |
+| `<gene>: targets must be named t1, t2, ... with t1 present`                               | A gene's `targets` mapping has a key that is not `t1`, `t2`, ... `tN`, or is missing `t1`                                | Rename the targets. `targets` takes no other keys — see [inputs.md](inputs.md#the-target-file) |
 
 **A note on the three "results-dir must match" messages.** The filenames they look for
 embed `<run_name>`, so all three also fire when `--results-dir` is correct but
@@ -34,6 +35,7 @@ failed.
 | The maternal and paternal columns look transposed                | `seg_bases` lists `[maternal, paternal]` per site. If yours are `[paternal, maternal]`, every call is on the wrong chromosome, and nothing detects it                                                                |
 | It appears to hang                                               | The default log level is `ERROR`, so nothing prints while it works. Re-run with `-vv` or `-vvv`                                                                                                                      |
 | A deletion appears where you expect a splicing change            | A genuine intron that the control sample did not support strongly enough is reported as a large deletion. Check whether the junction reached "standard" status in `refsplice`                                        |
+| Calls do not reflect a target you added                          | `count` also reads the target file: it picks each haplotype's defining mutation by distance to a cut site. After editing `targets` you must re-run `count`, not just `call`. Nothing compares the two stages' target files |
 
 ## Checking a run against the bundled example
 
