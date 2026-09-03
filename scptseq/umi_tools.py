@@ -11,6 +11,17 @@ from scipy.sparse.csgraph import connected_components
 
 
 def bc_and_umi_given_read_name(read_name: str) -> Tuple[str, str]:
+    """Split a read name into its cell barcode and UMI.
+
+    Read names must have the form `{barcode}_{umi}#{original_read_name}`.  The original read name
+    may itself contain `_` and `#`. A barcode or UMI may not contain `_`.
+
+    Args:
+        read_name: The full read name from the FASTQ or BAM.
+
+    Returns:
+        `(barcode, umi)`.
+    """
     return read_name.split('#')[0].split('_')
 
 def umi_given_read_name(read_name: str) -> str:
