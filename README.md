@@ -1,83 +1,112 @@
 # scPT-seq: Single-Cell Perturbation and Transcriptome Sequencing
 
 A suite of tools for processing scPT-seq data, as described in
-
-### Direct detection of CRISPR mutations and transcriptional responses at single cell resolution in vivo
+### Allele-resolved CRISPR editing and splicing outcomes with their transcriptional consequences in vivo
 
 **John A. Hawkins, Siamak Redhai, Svenja Leible, Mireia Osuna Lopez, Hilal Ozgur, Tianyu Wang, Michaela Holzem, Lars M. Steinmetz, Michael Boutros, Oliver Stegle**
 
+`scptseq` calls CRISPR-induced mutations — deletions, insertions, substitutions and
+splicing changes — per cell and per haplotype near targeted cut sites. It takes aligned
+reads and produces per-cell, per-haplotype mutation-status calls and QC figures.
 
-### Installation
+Read alignment is not part of this package. Align with the mapper of your choice,
+between the first and second stages of the pipeline.
 
-For easiest installation, use pip:
+## Data requirements
+
+1. **Long reads that span a segregating site and a cut site.** A read contributes to a call only if
+   it covers both. Haplotypes are assigned by reading the base at a segregating site whose maternal and paternal alleles you supply. A homozygous sample cannot be haplotyped.
+2. **A matched control sample of the same gene.** The control is what distinguishes
+   perturbation-induced splicing changes from the background of low-frequency
+   non-canonical junctions.
+
+The input format requirements — one coordinate-sorted, indexed BAM per cell, barcode and UMI
+encoded in the read name, spliced alignment — are described in [docs/inputs.md](docs/inputs.md).
+
+## Installation
+
+For the easiest installation, use pip:
 
 ```
 python -m pip install git+https://github.com/hawkjo/scptseq
 ```
 
-The following instructions should also work for manual installation across platforms, except that installing virtualenv with apt-get is Ubuntu specific. For other platforms, install virtualenv appropriately if desired.
-
-First, clone the repository to a local directory:
+To install from a clone, optionally into a virtual environment:
 
 ```
 git clone https://github.com/hawkjo/scptseq.git
-```
-
-Optionally, you can install into a virtual environment (recommended):
-
-```
 cd scptseq
 python -m venv envscptseq
 . envscptseq/bin/activate
-```
-
-Now install scptseq and its dependencies:
-
-```
 python -m pip install .
 ```
 
-Dependencies and requirements are listed in pyproject.toml. Tested on Linux el8. Install time ~1.5 minutes.
-
-### Usage
+For a reproducible environment, use [uv](https://docs.astral.sh/uv/) instead — a
+`uv.lock` is checked in, and uv is the only installer that reads it:
 
 ```
-Usage:
-  scptseq splitfastqs  <fastq_files> --output-dir=<output_dir> [-v | -vv | -vvv]
-  scptseq refsplice    <control_bam_dir> <run_name> <gene_name> <target_info_file> [--results-dir=<results_dir>] [-v | -vv | -vvv]
-  scptseq count        <genome_file> <perturbed_bam_dir> <run_name> <gene_name> <target_info_file> [--results-dir=<results_dir>] [-v | -vv | -vvv]
-  scptseq call         <run_name> <gene_name> <target_info_file> [--results-dir=<results_dir>] [-v | -vv | -vvv]
-
-Options:
-  -h --help     Show this screen.
-  --version     Show version.
-
-Commands:
-  splitfastqs   Split fastq files by barcode, one file per barcode
-  refsplice     Find all splice junctions in control data, including non-canonical
-  count         Count the haplotyped mutation information per cell 
-  call          Call mutations per cell 
+uv sync
 ```
 
-### Top level functions
-#### splitfastqs
-A helper function for separating the output of
-[freediv10xbarcodes](https://github.com/hawkjo/freediv10Xcellbcs) into separate files, one per
-barcode. Done for both control and perturbed files, to be aligned using mapping software of choice.
+Dependencies are listed in `pyproject.toml`. Linux and macOS; on Windows, use WSL, since
+pysam publishes no Windows wheels. Install time ~1.5 minutes.
 
-#### refsplice
-Used for identifying all splice junctions in a control sample, both canonical and non-canonical, 
-to distinguish perturbation-caused splice junction changes from low-frequency non-canonical
-junctions.
+### Verifying the installation
 
-#### count
-Preprocesses the aligned perturbation reads to collate key statistics per mutation per cell per
-haplotype.
+The bundled end-to-end test runs the last three stages against the example data and
+compares the result against a checked-in reference output:
 
-#### call
-Perform the mutation calling, outputing mutation status per chromosome per cell, as well as initial
-overview statistics and figures.
+```
+uv run pytest -m slow
+```
 
-### Examples
-Examples demonstrating use of each of the top level functions with further descriptions are given
-in the `examples` folder. Runtime ~2 minutes.
+It takes about two minutes. 
+
+## The pipeline
+
+Five steps, in order. 
+
+1. **`scptseq splitfastqs`** — split reads into one FASTQ per cell barcode. Run it separately on
+   the control and the perturbed reads.
+2. **Align, externally.** Spliced alignment, one BAM per cell, coordinate-sorted and
+   indexed. See [docs/tutorial.md](docs/tutorial.md) for the command used to produce the
+   bundled example data.
+3. **`scptseq refsplice`** — catalogue the real splice junctions, canonical and
+   non-canonical, from the **control** BAMs.
+4. **`scptseq count`** — collate per-cell, per-haplotype, per-mutation read and UMI
+   statistics from the **perturbed** BAMs.
+5. **`scptseq call`** — threshold those counts into mutation-status calls and QC figures.
+
+| Command | Reads | Writes |
+|---|---|---|
+| `splitfastqs` | one or more FASTQs | one FASTQ per barcode |
+| `refsplice` | control BAMs, target info | 4 junction YAMLs, 2 figures |
+| `count` | perturbed BAMs, genome FASTA, target info, `refsplice` output | per-cell mutation YAMLs, 1 aggregate statistics YAML |
+| `call` | `refsplice` and `count` output, target info | `*_mutation_statuses.txt`, 10 figures |
+
+Two things to know before your first run:
+
+- **`refsplice`, `count` and `call` must share both `--results-dir` and `<run_name>`.**
+  Each stage reads what the previous one wrote, and both values are part of how it finds
+  those files.
+- **The tool is silent by default.** Pass `-v`, `-vv` or `-vvv` to see progress.
+
+For the full argument lists, run `scptseq --help`.
+
+## Documentation
+
+- **[docs/tutorial.md](docs/tutorial.md)** — start here. Run the bundled example, then
+  adapt it to your own reads, targets and genome.
+- **[docs/inputs.md](docs/inputs.md)** — the input format reference: target information,
+  BAM layout, read names, genome FASTA.
+- **[docs/outputs.md](docs/outputs.md)** — how to read the calls, the mutation-string
+  notation, the decision rules, and the QC figures.
+- **[docs/troubleshooting.md](docs/troubleshooting.md)** — symptoms and their causes.
+
+Upstream barcode and UMI extraction is handled by the separate
+[freediv10Xcellbcs](https://github.com/hawkjo/freediv10Xcellbcs) tool.
+
+## Examples
+
+Runnable scripts for each stage, using the bundled example data for 30 cells, are in
+[examples/](examples/). Runtime ~2 minutes.
