@@ -16,13 +16,6 @@ log = logging.getLogger(__name__)
 plt.set_loglevel('critical')
 
 
-def get_clips(read):
-    """Return number of clipped bases from start and end of read"""
-    start_clip = next(i for i, (qq, rr) in enumerate(read.aligned_pairs) if rr)
-    end_clip = next(i for i, (qq, rr) in enumerate(read.aligned_pairs[::-1]) if rr)
-    return start_clip, end_clip
-
-
 def get_start_clip_and_last_rr(read):
     """Return number of bases to clip from beginning and last aligned read pos"""
     start_clip = next(i for i, (qq, rr) in enumerate(read.aligned_pairs) if rr)
@@ -31,8 +24,21 @@ def get_start_clip_and_last_rr(read):
 
 
 def get_splicing_junctions_from_ctrl(read, splicing_threshold=15):
-    """Return splicing junctions observed in one read"""
-    # splicing threshold: minimum intron length
+    """Return candidate splice junctions observed in one control read.
+
+    The catalogue of candidate splice junctions is built from a control sample, where cut-site
+    deletions are not expected. The CIGAR string is not consulted. 
+
+    Args:
+        read: A pysam aligned read.
+        splicing_threshold: A gap is recorded when its last reference position minus
+            its first exceeds this value 
+
+    Returns:
+        Set of `(first_position, last_position)` tuples, one per gap recorded.
+        Positions are 0-based, and soft-clipped ends plus the final aligned position
+        are excluded.
+    """
     splicing_junctions = set()
 
     chrm = read.reference_name
@@ -91,6 +97,26 @@ def load_all_muts_with_info(fpath):
 
 
 def get_haplotyped_mutations(read, genome, splicing_junction_str, seg_sites=[], skip_sites=[]):
+    """Extract one read's mutations and the bases it shows at the segregating sites.
+
+    Walks the aligned pairs, outputting mutation strings in the notation described by
+    `misc.parse_mutation`.  Segregating sites are recorded as haplotype evidence rather than called
+    as substitutions, and positions in `skip_sites` are ignored entirely.
+
+    Args:
+        read: A pysam aligned read.
+        genome: Mapping of contig name to sequence, as returned by `SeqIO.to_dict`.
+        splicing_junction_str: Maps a `(first_position, last_position)` gap to its
+            mutation string, as built by `find_all_ref_splice_junctions`.
+        seg_sites: Segregating-site positions for this gene.
+        skip_sites: Reference positions to ignore.
+
+    Returns:
+        `(seg_site_bases, muts)` where `seg_site_bases` maps each covered
+        segregating site to the base observed there, and `muts` is the list of
+        mutation strings in reference order. Soft-clipped ends and the final aligned
+        reference position are excluded from mutation calling.
+    """
     muts = []
     seg_site_bases = {}
 
@@ -157,11 +183,8 @@ def get_haplotyped_mutations(read, genome, splicing_junction_str, seg_sites=[], 
 def find_all_ref_splice_junctions(arguments):
     """Haplotyped mutation statistics counting pipeline"""
 
-    if not os.path.exists(arguments.results_dir):
-        os.mkdir(arguments.results_dir)
     fig_dir = os.path.join(arguments.results_dir, 'figures')
-    if not os.path.exists(fig_dir):
-        os.mkdir(fig_dir)
+    os.makedirs(fig_dir, exist_ok=True)
 
     ### Load annotation 
     log.info('Loading annotation...')
@@ -233,7 +256,7 @@ def find_all_ref_splice_junctions(arguments):
                     junction_total_counts[junction] += cntr[junction]
 
 
-    log.info('Top 50 of {len(junction_cell_counts)} observed splicing junctions:')
+    log.info(f'Top 50 of {len(junction_cell_counts)} observed splicing junctions:')
     log.info('Splicing junction\tIntron length\tCell count\tumi count')
     for tup, cell_count in junction_cell_counts.most_common()[:50]:
         intron_len = tup[1] - tup[0]
@@ -277,7 +300,7 @@ def find_all_ref_splice_junctions(arguments):
     for junction in splicing_junctions:
         ecdf = ECDF(junction_fracs_per_cell[junction])
         if ecdf.x[int(len(ecdf.x)/2)] > 0.05:
-            ax.plot(ecdf.x, ecdf.y, label=junction)
+            ax.plot(ecdf.x, ecdf.y, label=str(junction))
             standard_splicing_junctions.add(junction)
         else:
             ax.plot(ecdf.x, ecdf.y)
@@ -385,6 +408,21 @@ def haplotyped_mutation_preprocessing(arguments):
 
 
     def get_target_adj_mut_max_frac_and_cov(frac_cntr, cov_cntr, total_reads, max_dist=10):
+        """Find the haplotype-defining mutation and report its fraction and coverage.
+
+        The defining mutation is the highest-fraction non-splice mutation lying within
+        `max_dist` of either cut site.
+
+        Args:
+            frac_cntr: Maps mutation to the fraction of its covering reads that carry it.
+            cov_cntr: Maps mutation to the number of reads covering its position.
+            total_reads: Total reads for this haplotype.
+            max_dist: Maximum distance in bases from a cut site.
+
+        Returns:
+            `(mut, max_frac, cov)` if mutation exists
+            `(None, 0, total_reads)` otherwise, for wt calling coverage
+        """
         if cov_cntr:
             for mut, max_frac in frac_cntr.most_common():
                 if not mut.startswith('J') and target_info.mut_min_dist_to_cutsite(mut) <= max_dist:
@@ -419,8 +457,7 @@ def haplotyped_mutation_preprocessing(arguments):
             yaml.dump(output, out)
 
     mutations_dir = f'{arguments.perturbed_bam_dir}/mutations/'
-    if not os.path.exists(mutations_dir):
-        os.mkdir(mutations_dir)
+    os.makedirs(mutations_dir, exist_ok=True)
 
 
     ### Look in bam files
