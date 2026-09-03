@@ -16,14 +16,9 @@ LamC:
       paternal: A
     seg_sites:
     - 14572752
-    seg_sites_and_bases:
-    - !!python/tuple
-      - 14572752
-      - - C
-        - A
-    skip_sites: !!python/tuple
-    - - 14572824
-      - 14575733
+    skip_sites:
+    - 14572824
+    - 14575733
   start: 14570810
   strand: '-'
   targets:
@@ -60,15 +55,6 @@ Prosalpha3:
     seg_sites:
     - 20994903
     - 20995104
-    seg_sites_and_bases:
-    - !!python/tuple
-      - 20994903
-      - - G
-        - C
-    - !!python/tuple
-      - 20995104
-      - - T
-        - G
     skip_sites: []
   start: 20994900
   strand: +
