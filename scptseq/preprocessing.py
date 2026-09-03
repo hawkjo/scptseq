@@ -10,7 +10,7 @@ from collections import Counter, defaultdict
 from statsmodels.distributions.empirical_distribution import ECDF
 from . import umi_tools
 from .constants import haplotypes
-from .misc import parse_mutation, bc_from_fpath, TargetInfo
+from .misc import parse_mutation, bc_from_fpath, map_over_cells, TargetInfo
 
 log = logging.getLogger(__name__)
 plt.set_loglevel('critical')
@@ -180,15 +180,59 @@ def get_haplotyped_mutations(read, genome, splicing_junction_str, seg_sites=[], 
     return seg_site_bases, muts
 
 
+_control_target_info = None
+
+
+def _init_control_worker(target_info_file, gene_name):
+    """Load the per-process state read by `_count_cell_junction_umis`."""
+    global _control_target_info
+    _control_target_info = TargetInfo(target_info_file, gene_name)
+
+
+def _count_cell_junction_umis(bam_fpath):
+    """Count the UMIs supporting each candidate splice junction in one control cell.
+
+    UMIs are corrected within the cell before counting, so a junction seen on several
+    reads of one UMI counts once.
+
+    Args:
+        bam_fpath: One control cell's BAM.
+
+    Returns:
+        `(junction_counter, n_umis)`, where `junction_counter` maps a
+        `(first_position, last_position)` gap to the number of corrected UMIs supporting
+        it, and `n_umis` is the number of corrected UMIs in the cell. Neither is a `set`:
+        see `misc.map_over_cells` for why that matters.
+    """
+    target_info = _control_target_info
+    umi_map_given_bc = umi_tools.get_umi_maps_from_fastq_or_bam_file(
+            bam_fpath=bam_fpath,
+            chrm=target_info.gene_chrm,
+            start=target_info.gene_start,
+            end=target_info.gene_end)
+
+    cell_junctions_given_umi = defaultdict(set)
+    for read in pysam.AlignmentFile(bam_fpath).fetch(
+            target_info.gene_chrm,
+            target_info.gene_start,
+            target_info.gene_end):
+        if not read.query:
+            continue
+        bc, umi = umi_tools.bc_and_umi_given_read_name(read.qname)
+        corrected_umi = umi_map_given_bc[bc][umi]
+        cell_junctions_given_umi[corrected_umi].update(get_splicing_junctions_from_ctrl(read))
+
+    cell_junctions_cntr = Counter()
+    for umi_splicing_junctions in cell_junctions_given_umi.values():
+        cell_junctions_cntr.update(umi_splicing_junctions)
+    return cell_junctions_cntr, len(cell_junctions_given_umi)
+
+
 def find_all_ref_splice_junctions(arguments):
     """Haplotyped mutation statistics counting pipeline"""
 
     fig_dir = os.path.join(arguments.results_dir, 'figures')
     os.makedirs(fig_dir, exist_ok=True)
-
-    ### Load annotation 
-    log.info('Loading annotation...')
-    target_info = TargetInfo(arguments.target_info_file, arguments.gene_name)
 
     ### umi aware splice-junction determination from control sample
     # 
@@ -201,43 +245,22 @@ def find_all_ref_splice_junctions(arguments):
     ctrl_bam_files.sort()
     log.info(f'Found {len(ctrl_bam_files)} files')
 
-    log.info('Building umi maps...')
-    ctrl_bam_umi_map_given_bc = {ctrl_bam_fpath:
-            umi_tools.get_umi_maps_from_fastq_or_bam_file(
-                bam_fpath=ctrl_bam_fpath,
-                chrm=target_info.gene_chrm,
-                start=target_info.gene_start,
-                end=target_info.gene_end)
-            for ctrl_bam_fpath in ctrl_bam_files}
-
     log.info('Counting splice junction umis per cell...')
+    per_cell_results = map_over_cells(
+            _count_cell_junction_umis,
+            ctrl_bam_files,
+            arguments.threads,
+            initializer=_init_control_worker,
+            initargs=(arguments.target_info_file, arguments.gene_name))
+
     # splicing_junctions_list_of_cntrs contains a list of one counter for each cell, where the counter
-    # indicates for each splicing junction how many umis support that splicing junction
-    splicing_junctions_list_of_cntrs = []
-    splicing_junctions_cntr_given_bc_fpath = {}
-    n_umis_given_bc_fpath = {}
-    for i, bam_fpath in enumerate(ctrl_bam_files):
-        if i % 100 == 0:
-            log.info(f'  {i}/{len(ctrl_bam_files)}')
-        umi_map_given_bc = ctrl_bam_umi_map_given_bc[bam_fpath]
-        cell_junctions_given_umi = defaultdict(set)
-        for read in pysam.AlignmentFile(bam_fpath).fetch(
-                target_info.gene_chrm,
-                target_info.gene_start,
-                target_info.gene_end):
-            if not read.query:
-                continue
-            bc, umi = umi_tools.bc_and_umi_given_read_name(read.qname)
-            corrected_umi = umi_map_given_bc[bc][umi]
-            cell_junctions_given_umi[corrected_umi].update(get_splicing_junctions_from_ctrl(read))
-        n_umis_given_bc_fpath[bam_fpath] = len(cell_junctions_given_umi)
-
-        cell_junctions_cntr = Counter()
-        for umi_splicing_junctions in cell_junctions_given_umi.values():
-            cell_junctions_cntr.update(umi_splicing_junctions)
-
-        splicing_junctions_list_of_cntrs.append(cell_junctions_cntr)
-        splicing_junctions_cntr_given_bc_fpath[bam_fpath] = cell_junctions_cntr
+    # indicates for each splicing junction how many umis support that splicing junction. It is kept in
+    # ctrl_bam_files order: the reductions below depend on that order.
+    splicing_junctions_list_of_cntrs = [cntr for cntr, _ in per_cell_results]
+    splicing_junctions_cntr_given_bc_fpath = dict(zip(ctrl_bam_files, splicing_junctions_list_of_cntrs))
+    n_umis_given_bc_fpath = {
+            bam_fpath: n_umis for bam_fpath, (_, n_umis) in zip(ctrl_bam_files, per_cell_results)
+            }
 
 
     all_possible_splicing_junctions = set()
@@ -387,6 +410,71 @@ def find_all_ref_splice_junctions(arguments):
     log.info(f'Splice junction representations saved to {out_fpath}')
 
 
+_count_state = {}
+
+
+def _init_count_worker(genome_file, target_info_file, gene_name, splicing_junction_str, out_dir):
+    """Load the per-process state read by `_write_cell_mutations`.
+
+    Only the target contig is kept from the genome FASTA. Reads are fetched from that
+    contig alone, so no other record is ever indexed, and holding one contig rather than a
+    whole genome is what keeps peak memory in hand at high thread counts.
+
+    Raises:
+        ValueError: If the FASTA has no record named by the target file's `chrm`.
+    """
+    target_info = TargetInfo(target_info_file, gene_name)
+    genome = {
+            rec.id: rec for rec in SeqIO.parse(genome_file, 'fasta')
+            if rec.id == target_info.gene_chrm
+            }
+    if not genome:
+        raise ValueError(
+                f'{genome_file} has no record named {target_info.gene_chrm}. The target '
+                f'file chrm, the BAM header and the FASTA record id must all agree.')
+    _count_state.update(
+            genome=genome,
+            target_info=target_info,
+            splicing_junction_str=splicing_junction_str,
+            out_dir=out_dir,
+            )
+
+
+def _write_cell_mutations(bam_fpath):
+    """Write one cell's per-read mutations to `<barcode>.mutations.yml`.
+
+    Args:
+        bam_fpath: One perturbed cell's BAM.
+
+    Returns:
+        The path written.
+    """
+    genome = _count_state['genome']
+    target_info = _count_state['target_info']
+    splicing_junction_str = _count_state['splicing_junction_str']
+
+    out_fpath = os.path.join(_count_state['out_dir'], f'{bc_from_fpath(bam_fpath)}.mutations.yml')
+    output = []
+    for read in pysam.AlignmentFile(bam_fpath).fetch(
+            target_info.gene_chrm,
+            target_info.gene_start,
+            target_info.gene_end):
+        if read.query is None:
+            continue
+        seg_site_bases, muts = get_haplotyped_mutations(
+                read,
+                genome,
+                splicing_junction_str,
+                target_info.seg_sites,
+                target_info.skip_sites
+                )
+        haplotype = target_info.maternal_or_paternal(seg_site_bases)
+        output.append([read.qname, (read.pos, read.aend), haplotype, seg_site_bases, muts])
+    with open(out_fpath, 'w') as out:
+        yaml.dump(output, out)
+    return out_fpath
+
+
 def haplotyped_mutation_preprocessing(arguments):
     """Haplotyped mutation statistics counting"""
     # We haplotype each read according to the segregating site present in the read that is closest
@@ -398,11 +486,6 @@ def haplotyped_mutation_preprocessing(arguments):
         raise ValueError(f'{fpath} does not exist. results-dir must match refsplice')
     with open(fpath) as f:
         splicing_junction_str = yaml.load(f, Loader=yaml.FullLoader)
-
-
-    # Load genome
-    log.info('Loading genome')
-    genome = SeqIO.to_dict(SeqIO.parse(open(arguments.genome_file), 'fasta'))
 
 
     # Load annotation and build annotation-based functions
@@ -437,28 +520,6 @@ def haplotyped_mutation_preprocessing(arguments):
         cov = total_reads
         return None, max_frac, cov
 
-    def write_all_muts(bam_fpath, out_dir):
-        bc = bc_from_fpath(bam_fpath)
-        out_fpath = os.path.join(out_dir, f'{bc}.mutations.yml')
-        output = []
-        for read in pysam.AlignmentFile(bam_fpath).fetch(
-                target_info.gene_chrm,
-                target_info.gene_start,
-                target_info.gene_end):
-            if read.query is None:
-                continue
-            seg_site_bases, muts = get_haplotyped_mutations(
-                    read,
-                    genome,
-                    splicing_junction_str,
-                    target_info.seg_sites,
-                    target_info.skip_sites
-                    )
-            haplotype = target_info.maternal_or_paternal(seg_site_bases)
-            output.append([read.qname, (read.pos, read.aend), haplotype, seg_site_bases, muts])
-        with open(out_fpath, 'w') as out:
-            yaml.dump(output, out)
-
     mutations_dir = f'{arguments.perturbed_bam_dir}/mutations/'
     os.makedirs(mutations_dir, exist_ok=True)
 
@@ -470,20 +531,33 @@ def haplotyped_mutation_preprocessing(arguments):
     bam_files.sort()
     log.info(f'Found {len(bam_files)} files')
 
-    for i, bam_fpath in enumerate(bam_files):
-        if i % 100 == 0:
-            log.info(f'{i}/{len(bam_files)}')
-        write_all_muts(bam_fpath, mutations_dir)
+    # bc_from_fpath truncates at the first '.', so two BAMs can name the same cell and
+    # target the same output file. Serially the later one in sorted order wins; keep only
+    # that one, so that no two workers write the same path.
+    bam_files = list({bc_from_fpath(bam_fpath): bam_fpath for bam_fpath in bam_files}.values())
+
+    map_over_cells(
+            _write_cell_mutations,
+            bam_files,
+            arguments.threads,
+            initializer=_init_count_worker,
+            initargs=(
+                arguments.genome_file,
+                arguments.target_info_file,
+                arguments.gene_name,
+                splicing_junction_str,
+                mutations_dir,
+                ))
     log.info('Mutation files written')
 
 
-    mut_fpaths = glob.glob(os.path.join(mutations_dir, '*.mutations.yml'))
+    # Every file in the directory is read, not just the ones just written, so per-cell
+    # files left by an earlier run are picked up too.
+    mut_fpaths = sorted(glob.glob(os.path.join(mutations_dir, '*.mutations.yml')))
 
     log.info('Loading all mutation information')
-    all_muts_with_info_by_bc = {}
-    for fpath in mut_fpaths:
-        bc = bc_from_fpath(fpath)
-        all_muts_with_info_by_bc[bc] = load_all_muts_with_info(fpath)
+    loaded = map_over_cells(load_all_muts_with_info, mut_fpaths, arguments.threads)
+    all_muts_with_info_by_bc = dict(zip((bc_from_fpath(fpath) for fpath in mut_fpaths), loaded))
 
     all_bcs = list(all_muts_with_info_by_bc.keys())
     log.info(f'Cells with mutation information: {len(all_bcs)}')
