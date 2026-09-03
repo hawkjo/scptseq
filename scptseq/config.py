@@ -64,7 +64,10 @@ class CommandLineArguments(object):
 
     @property
     def threads(self):
-        return int(self._arguments['--threads'] or 1)
+        threads = int(self._arguments['--threads'] or 1)
+        if threads < 1:
+            raise ValueError(f'--threads must be at least 1, got {threads}')
+        return threads
 
     @property
     def output_dir(self):

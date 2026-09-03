@@ -1,7 +1,12 @@
+import logging
+import multiprocessing
 import os
 import re
 import gzip
 import yaml
+from concurrent.futures import ProcessPoolExecutor
+
+log = logging.getLogger(__name__)
 
 
 ins_re = re.compile(r'^I(\d+)([ACGT]+)$')
@@ -64,6 +69,54 @@ def parse_mutation(mut: str) -> list:
     else:
         pos = int(mut[1:-1])
         return ['sub', pos, pos, (mut[0], mut[-1])]
+
+
+def _log_progress(results, n_cells):
+    """Yield each result through, logging a running count every 100 cells."""
+    for i, result in enumerate(results):
+        if i % 100 == 0:
+            log.info(f'{i}/{n_cells}')
+        yield result
+
+
+def map_over_cells(worker, cell_files, threads: int, initializer=None, initargs=()):
+    """Run `worker` on each cell's file, returning results in `cell_files` order.
+
+    Results come back in input order rather than completion order. The reductions that
+    consume them depend on that order, so it must not vary with `threads`.
+
+    A `threads` of 1 runs in the calling process without starting a pool. `initializer`
+    runs once in the calling process and once per worker process, so `worker` sees the
+    same state either way, and so that bad inputs raise their own error here rather than
+    inside a pool initializer, where they surface only as a `BrokenProcessPool`.
+
+    Args:
+        worker: A module-level function taking one element of `cell_files`. It must not
+            return a `set`, or anything containing one: pickling a set rebuilds it in its
+            own iteration order, which is not the order the serial code produces.
+        cell_files: One file per cell, in the order the reduction expects.
+        threads: Worker processes to use. More workers than cells are not started.
+        initializer: Sets up the per-process state `worker` reads.
+        initargs: Arguments to `initializer`.
+
+    Returns:
+        List of `worker` results, in `cell_files` order.
+    """
+    n_cells = len(cell_files)
+    if initializer is not None:
+        initializer(*initargs)
+    if threads == 1:
+        return list(_log_progress(map(worker, cell_files), n_cells))
+
+    # spawn rather than fork: the parent has pysam and matplotlib loaded, and neither is
+    # fork-safe. It also keeps macOS and Linux on one code path.
+    with ProcessPoolExecutor(
+            max_workers=max(1, min(threads, n_cells)),
+            mp_context=multiprocessing.get_context('spawn'),
+            initializer=initializer,
+            initargs=initargs,
+            ) as pool:
+        return list(_log_progress(pool.map(worker, cell_files), n_cells))
 
 
 def bc_from_fpath(fpath):

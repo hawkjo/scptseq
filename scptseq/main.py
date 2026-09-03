@@ -3,13 +3,14 @@ scptseq: Computational suite for scPT-seq data
 
 Usage:
   scptseq splitfastqs  <fastq_files> --output-dir=<output_dir> [-v | -vv | -vvv]
-  scptseq refsplice    <control_bam_dir> <run_name> <gene_name> <target_info_file> [--results-dir=<results_dir>] [-v | -vv | -vvv]
-  scptseq count        <genome_file> <perturbed_bam_dir> <run_name> <gene_name> <target_info_file> [--results-dir=<results_dir>] [-v | -vv | -vvv]
+  scptseq refsplice    <control_bam_dir> <run_name> <gene_name> <target_info_file> [--results-dir=<results_dir>] [--threads=<threads>] [-v | -vv | -vvv]
+  scptseq count        <genome_file> <perturbed_bam_dir> <run_name> <gene_name> <target_info_file> [--results-dir=<results_dir>] [--threads=<threads>] [-v | -vv | -vvv]
   scptseq call         <run_name> <gene_name> <target_info_file> [--results-dir=<results_dir>] [-v | -vv | -vvv]
 
 Options:
-  -h --help     Show this screen.
-  --version     Show version.
+  -h --help            Show this screen.
+  --version            Show version.
+  --threads=<threads>  Worker processes for per-cell work [default: 1]
 
 Commands:
   splitfastqs   Split fastq files by barcode, one file per barcode
