@@ -326,6 +326,9 @@ def find_all_ref_splice_junctions(arguments):
     log.info(f'Junction fractions per cell saved to {out_fpath}')
 
 
+    if not standard_splicing_junctions:
+        log.warning('No standard splicing junctions found. Gaps will be reported as deletions.')
+
     log.info('Processing non-standard junctions')
     # Find the non-standard splicing junctions by transitive matching with standard junctions
     splicing_junction_str = {}
@@ -369,8 +372,8 @@ def find_all_ref_splice_junctions(arguments):
                 overlap[standard_junction] = end - s_start
             else:
                 overlap[standard_junction] = 0
-        best_overlap_junction = max(standard_splicing_junctions, key=lambda j: overlap[j])
-        if overlap[best_overlap_junction] > 0:
+        best_overlap_junction = max(standard_splicing_junctions, key=lambda j: overlap[j], default=None)
+        if best_overlap_junction is not None and overlap[best_overlap_junction] > 0:
             bss, bse = best_overlap_junction
             splicing_junction_str[junction] = f'J{bss}_{bse}>{start-bss:+d}_{end-bse:+d}'
             log.debug(f'{junction}, {splicing_junction_str[junction]}, {overlap}')
