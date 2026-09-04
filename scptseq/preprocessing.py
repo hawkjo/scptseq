@@ -331,6 +331,12 @@ def find_all_ref_splice_junctions(arguments):
 
     log.info('Processing non-standard junctions')
     # Find the non-standard splicing junctions by transitive matching with standard junctions
+    #
+    # A sibling loop in call_mutations.py resolves deletions against the same catalogue.
+    # The two are deliberately not interchangeable: this one names every gap seen in the
+    # control sample and is permissive, while that one asserts a perturbed cut-site deletion
+    # is really a splicing change and is stricter. Merging them onto one policy changes calls.
+    # Iteration order below is output-relevant in general, so do not add sorted() to tidy it.
     splicing_junction_str = {}
     prev_len = -1
     best_standard_start, best_standard_end = {}, {}

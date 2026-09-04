@@ -107,6 +107,8 @@ def call_mutations(arguments):
 
     # max_frac vs cov threshold fig
 
+    # yy_thresh, derived below while drawing this figure, is read by get_cell_haplotype_status
+    # further down, so the calling logic is tied to this
     def get_threshes(hap):
         xx_lower_thresh = 0.3
         xx_upper_thresh = 0.3
@@ -173,6 +175,12 @@ def call_mutations(arguments):
 
     # Find deletions that are actually missplicings and replace
     #   Use transitive matching with standard junctions
+    #
+    # A sibling loop in preprocessing.py builds the catalogue from the control sample. The
+    # two are deliberately not interchangeable: that one is permissive because every control
+    # gap must be named, this one is stricter because accepting a deletion here asserts it is
+    # really a splicing change. Merging them onto one policy changes calls. Iteration order
+    # below is output-relevant in general, so do not add sorted() to tidy it.
     splicing_junction_str_given_del = {}
     prev_len = -1
     best_standard_start = {start: parse_mutation(junc_str)[1] for (start, end), junc_str in splicing_junction_str.items()}
